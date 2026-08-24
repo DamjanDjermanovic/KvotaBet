@@ -1,0 +1,11 @@
+/* Sopstveni stilovi projekta - Bootstrap 5 dolazi preko CDN-a i pokriva
+   veliku većinu izgleda, ovde su samo sitna doterivanja. */
+
+body {
+    min-height: 100vh;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+}
