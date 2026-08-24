@@ -1,0 +1,4 @@
+uploads/dokumenta/*
+logovi/*.log
+test.php
+!uploads/dokumenta/.gitkeep
