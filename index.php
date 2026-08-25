@@ -173,8 +173,18 @@ require_once __DIR__ . '/includes/zaglavlje.php';
                     <span class="tim"><?= bezbedno($dogadjaj['gost_naziv']) ?></span>
                 </div>
 
+                <?php
+                // Prva tri tipa igre (obično 1/X/2) stoje odmah u redu; ostatak je
+                // iza dugmeta "+N", da red ne postane predugačak kod sportova sa
+                // devet tipova igre (fudbal). Kvote već stižu sortirane po id-ju
+                // tipa igre (index.php upit za $dogadjaj['kvote'] ide ORDER BY
+                // ti.id), pa su prva tri baš 1/X/2.
+                $vidljive_kvote = array_slice($dogadjaj['kvote'], 0, 3);
+                $skrivene_kvote = array_slice($dogadjaj['kvote'], 3);
+                $id_prosirenja = 'prosireno-' . (int) $dogadjaj['id'];
+                ?>
                 <div class="kvote-grupa">
-                    <?php foreach ($dogadjaj['kvote'] as $kvota): ?>
+                    <?php foreach ($vidljive_kvote as $kvota): ?>
                         <?php // aria-pressed prati .izabrana, da i čitač ekrana zna šta je na tiketu ?>
                         <button type="button" class="kvota dugme-kvota"
                                 data-kvota-id="<?= (int) $kvota['id'] ?>" aria-pressed="false">
@@ -182,7 +192,30 @@ require_once __DIR__ . '/includes/zaglavlje.php';
                             <span class="kvota-vrednost"><?= number_format((float) $kvota['vrednost'], 2) ?></span>
                         </button>
                     <?php endforeach; ?>
+
+                    <?php if (!empty($skrivene_kvote)): ?>
+                        <?php // Bez AJAX-a: dugme samo otkriva panel ispod reda, koji je već ispisan u HTML-u ?>
+                        <button type="button" class="kvota dugme-prosiri-kvote"
+                                data-cilj="<?= bezbedno($id_prosirenja) ?>"
+                                data-oznaka-zatvoreno="+<?= count($skrivene_kvote) ?>"
+                                data-oznaka-otvoreno="manje"
+                                aria-expanded="false" aria-controls="<?= bezbedno($id_prosirenja) ?>">
+                            <span class="kvota-vrednost">+<?= count($skrivene_kvote) ?></span>
+                        </button>
+                    <?php endif; ?>
                 </div>
+
+                <?php if (!empty($skrivene_kvote)): ?>
+                    <div class="kvote-dodatne d-none" id="<?= bezbedno($id_prosirenja) ?>">
+                        <?php foreach ($skrivene_kvote as $kvota): ?>
+                            <button type="button" class="kvota dugme-kvota"
+                                    data-kvota-id="<?= (int) $kvota['id'] ?>" aria-pressed="false">
+                                <span class="oznaka"><?= bezbedno($kvota['oznaka']) ?></span>
+                                <span class="kvota-vrednost"><?= number_format((float) $kvota['vrednost'], 2) ?></span>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
     <?php endforeach; ?>
     <?php if ($blok_otvoren): ?></div><?php endif; ?>
@@ -255,6 +288,6 @@ require_once __DIR__ . '/includes/zaglavlje.php';
 </div><!-- kraj reda -->
 
 <?php
-$dodatne_skripte = ['tiket.js'];
+$dodatne_skripte = ['tiket.js', 'ponuda.js'];
 require_once __DIR__ . '/includes/podnozje.php';
 ?>

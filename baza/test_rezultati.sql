@@ -53,30 +53,36 @@ SET status = 'najavljen', golova_domacin = NULL, golova_gost = NULL,
 WHERE id IN (1, 3, 4);
 
 -- ---------------------------------------------------------------------
--- Kvote za ova tri događaja se brišu i unose iznova, sa fiksnim ID-jevima i
--- poznatim vrednostima. Skripta se tako ne oslanja na to da su kvote iz
--- test_podaci.sql još netaknute (operater ih je mogao izmeniti ili obrisati).
--- Brisanje je bezbedno jer su stavke tiketa maločas obrisane, pa nema više
--- nijedne reference na te kvote.
+-- Kvote za ova tri događaja se brišu i unose iznova, sa poznatim vrednostima.
+-- Skripta se tako ne oslanja na to da su kvote iz test_podaci.sql još
+-- netaknute (operater ih je mogao izmeniti ili obrisati). Brisanje je
+-- bezbedno jer su stavke tiketa maločas obrisane, pa nema više nijedne
+-- reference na te kvote.
 --
 -- Tip igre se traži po oznaci, a ne po pretpostavljenom ID-ju - par
 -- (sport_id, oznaka) je UNIQUE u šifarniku. Događaji 1, 3 i 4 su fudbalski.
+--
+-- ID kvote se namerno ne zadaje - otkad test_podaci.sql upisuje svih devet
+-- tipova igre po fudbalskom događaju (ne samo 1/X/2), redni brojevi kvota
+-- više nisu 1-12 po malom broju događaja, pa bi fiksni ID ovde upao u tuđ
+-- opseg. Stavke tiketa ispod zato i same traže kvota_id po (dogadjaj_id,
+-- oznaka), umesto po pretpostavljenom broju.
 -- ---------------------------------------------------------------------
 DELETE FROM kvota WHERE dogadjaj_id IN (1, 3, 4);
 
-INSERT INTO kvota (id, dogadjaj_id, tip_igre_id, vrednost, aktivna) VALUES
+INSERT INTO kvota (dogadjaj_id, tip_igre_id, vrednost, aktivna) VALUES
 -- Događaj 1: Mančester Siti — Liverpul
-(1,  1, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1'), 1.75, 1),
-(2,  1, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = 'X'), 3.80, 1),
-(3,  1, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '2'), 4.20, 1),
+(1, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1'), 1.75, 1),
+(1, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = 'X'), 3.80, 1),
+(1, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '2'), 4.20, 1),
 -- Događaj 3: Real Madrid — Barselona
-(7,  3, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1'), 2.25, 1),
-(8,  3, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = 'X'), 3.50, 1),
-(9,  3, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '2'), 2.90, 1),
+(3, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1'), 2.25, 1),
+(3, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = 'X'), 3.50, 1),
+(3, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '2'), 2.90, 1),
 -- Događaj 4: Atletiko Madrid — Sevilja
-(10, 4, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1'), 1.95, 1),
-(11, 4, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = 'X'), 3.30, 1),
-(12, 4, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '2'), 3.70, 1);
+(4, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1'), 1.95, 1),
+(4, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = 'X'), 3.30, 1),
+(4, (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '2'), 3.70, 1);
 
 
 -- ---------------------------------------------------------------------
@@ -96,16 +102,17 @@ INSERT INTO tiket (id, broj_tiketa, korisnik_id, ulog, ukupna_kvota, potencijaln
 -- 2 para: jedan promašen, drugi pogođen
 (906, 'T-TEST-06', 900, 100.00, 3.94, 394.00, 'aktivan', NOW() - INTERVAL 2 DAY);
 
+-- Kvota po (dogadjaj_id, oznaka) - vidi napomenu uz INSERT INTO kvota iznad
 INSERT INTO tiket_stavka (tiket_id, kvota_id, kvota_vrednost, status) VALUES
-(901, 1,  1.75, 'ceka'),
-(902, 2,  3.80, 'ceka'),
-(903, 1,  1.75, 'ceka'),
-(903, 8,  3.50, 'ceka'),
-(904, 10, 1.95, 'ceka'),
-(905, 1,  1.75, 'ceka'),
-(905, 10, 1.95, 'ceka'),
-(906, 7,  2.25, 'ceka'),
-(906, 1,  1.75, 'ceka');
+(901, (SELECT id FROM kvota WHERE dogadjaj_id = 1 AND tip_igre_id = (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1')), 1.75, 'ceka'),
+(902, (SELECT id FROM kvota WHERE dogadjaj_id = 1 AND tip_igre_id = (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = 'X')), 3.80, 'ceka'),
+(903, (SELECT id FROM kvota WHERE dogadjaj_id = 1 AND tip_igre_id = (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1')), 1.75, 'ceka'),
+(903, (SELECT id FROM kvota WHERE dogadjaj_id = 3 AND tip_igre_id = (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = 'X')), 3.50, 'ceka'),
+(904, (SELECT id FROM kvota WHERE dogadjaj_id = 4 AND tip_igre_id = (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1')), 1.95, 'ceka'),
+(905, (SELECT id FROM kvota WHERE dogadjaj_id = 1 AND tip_igre_id = (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1')), 1.75, 'ceka'),
+(905, (SELECT id FROM kvota WHERE dogadjaj_id = 4 AND tip_igre_id = (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1')), 1.95, 'ceka'),
+(906, (SELECT id FROM kvota WHERE dogadjaj_id = 3 AND tip_igre_id = (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1')), 2.25, 'ceka'),
+(906, (SELECT id FROM kvota WHERE dogadjaj_id = 1 AND tip_igre_id = (SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = '1')), 1.75, 'ceka');
 
 -- ---------------------------------------------------------------------
 -- Istorija transakcija koja odgovara gornjim tiketima, da stanje računa ne

@@ -229,6 +229,7 @@ h3 { font-size: 1.3rem; }
 
 .dogadjaj-red {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 1rem;
     background: var(--karta);
@@ -349,6 +350,30 @@ h3 { font-size: 1.3rem; }
     outline: 2px solid var(--plava-400);
     outline-offset: 2px;
 }
+
+/* Dugme "+N" koje otkriva ostale tipove igre - iscrtkana ivica ga vizuelno
+   odvaja od pravih kvota, da se odmah vidi da klik ne ide na tiket */
+.kvota.dugme-prosiri-kvote {
+    --kvota-boja: var(--plava-500);
+    border-style: dashed;
+    font-weight: 600;
+}
+
+/* Ostali tipovi igre, iza dugmeta "+N". flex-basis 100% na .dogadjaj-red
+   (koji ima flex-wrap) gura ovaj panel u novi red ispod kvota - bez potrebe
+   za posebnim omotačem oko celog događaja. Isprekidana linija ga razdvaja od
+   reda iznad, kao zbir na tiketu. */
+.kvote-dodatne {
+    display: flex;
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    gap: .35rem;
+    margin-top: .5rem;
+    padding-top: .6rem;
+    border-top: 1px dashed var(--ivica);
+}
+
+.kvote-dodatne.d-none { display: none; }
 
 /* Kratko treperenje kad se kvota promeni — pažnja bez buke */
 @keyframes kvota-promena {
