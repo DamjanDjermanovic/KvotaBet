@@ -69,3 +69,23 @@ function generisi_broj_tiketa(): string
 {
     return 'T-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(4)));
 }
+
+// Upamti poruku za ispis posle sledećeg preusmeravanja (tzv. "flash" poruka).
+// Koristi se posle CRUD akcija: stranica obradi POST, preusmeri na samu sebe
+// (da osvežavanje ne ponovi slanje forme), a poruka o uspehu/grešci preživi
+// to preusmeravanje kroz sesiju.
+function postavi_poruku(string $vrsta, string $tekst): void
+{
+    $_SESSION['poruke'][] = ['vrsta' => $vrsta, 'tekst' => $tekst];
+}
+
+// Ispisuje sve upamćene poruke kao Bootstrap obaveštenja i prazni ih iz
+// sesije, da se ne bi ponovo prikazale pri sledećem učitavanju stranice.
+function prikazi_poruke(): void
+{
+    foreach ($_SESSION['poruke'] ?? [] as $poruka) {
+        echo '<div class="alert alert-' . bezbedno($poruka['vrsta']) . '">' . bezbedno($poruka['tekst']) . '</div>';
+    }
+
+    unset($_SESSION['poruke']);
+}

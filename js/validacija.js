@@ -105,4 +105,67 @@
     if (formaPrijava) {
         omoguciBootstrapValidaciju(formaPrijava, null);
     }
+
+    var formaProfilPodaci = document.getElementById('forma-profil-podaci');
+
+    if (formaProfilPodaci) {
+        omoguciBootstrapValidaciju(formaProfilPodaci, null);
+    }
+
+    var formaProfilLozinka = document.getElementById('forma-profil-lozinka');
+
+    if (formaProfilLozinka) {
+        var poljeNovaLozinka = document.getElementById('nova_lozinka');
+        var poljeNovaPotvrda = document.getElementById('potvrda_nove_lozinke');
+        var greskaPotvrde = document.getElementById('greska-potvrda-lozinke');
+
+        omoguciBootstrapValidaciju(formaProfilLozinka, function () {
+            var vrednost = poljeNovaLozinka.value;
+            var jacinaOk = vrednost.length >= 6 && /[A-Za-z]/.test(vrednost) && /[0-9]/.test(vrednost);
+            var poklapaSe = poljeNovaPotvrda.value === vrednost;
+
+            var poruka = !jacinaOk
+                ? 'Lozinka mora imati bar 6 znakova, jedno slovo i jednu cifru.'
+                : (!poklapaSe ? 'Lozinke se ne poklapaju.' : '');
+
+            poljeNovaPotvrda.setCustomValidity(poruka);
+            if (greskaPotvrde) {
+                greskaPotvrde.textContent = poruka;
+            }
+
+            return jacinaOk && poklapaSe;
+        });
+    }
+
+    var formaProfilDokument = document.getElementById('forma-profil-dokument');
+
+    if (formaProfilDokument) {
+        var poljeDokument = document.getElementById('dokument');
+        var dozvoljeneEkstenzije = ['jpg', 'jpeg', 'png', 'pdf'];
+        var maxVelicinaBajtova = 5 * 1024 * 1024;
+
+        omoguciBootstrapValidaciju(formaProfilDokument, function () {
+            var fajl = poljeDokument.files[0];
+
+            if (!fajl) {
+                poljeDokument.setCustomValidity('Izaberite fajl.');
+                return false;
+            }
+
+            var ekstenzija = fajl.name.split('.').pop().toLowerCase();
+
+            if (dozvoljeneEkstenzije.indexOf(ekstenzija) === -1) {
+                poljeDokument.setCustomValidity('Dozvoljeni formati su JPG, PNG i PDF.');
+                return false;
+            }
+
+            if (fajl.size > maxVelicinaBajtova) {
+                poljeDokument.setCustomValidity('Fajl je prevelik (maksimalno 5 MB).');
+                return false;
+            }
+
+            poljeDokument.setCustomValidity('');
+            return true;
+        });
+    }
 })();

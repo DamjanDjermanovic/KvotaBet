@@ -19,6 +19,10 @@ date_default_timezone_set('Europe/Belgrade');
 define('MIN_ULOG', 50.00);
 define('MAX_ULOG', 50000.00);
 
+// --- Uplata virtuelnih sredstava na račun ---
+define('MIN_UPLATA', 100.00);
+define('MAX_UPLATA', 200000.00);
+
 // --- Registracija ---
 // Prema pravilima kladionice korisnik mora imati bar ovoliko godina
 define('MIN_GODINA_ZA_REGISTRACIJU', 18);

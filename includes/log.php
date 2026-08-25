@@ -30,6 +30,30 @@ function upisi_gresku(string $poruka): void
     file_put_contents(PUTANJA_LOG_GRESKE, $red, FILE_APPEND | LOCK_EX);
 }
 
+// Upisuje jedan red u tabelu pristup_log u bazi - isti pristup kao
+// upisi_pristup(), samo u obliku pogodnom za upite (statistika u admin panelu
+// filtrira i grupiše po ovoj tabeli, a tekstualni fajl ostaje kao nezavisan trag).
+// Greška upisa se ne prikazuje korisniku niti prekida učitavanje stranice -
+// da statistika ne bi oborila samu aplikaciju.
+function evidentiraj_pristup_u_bazi(PDO $pdo, ?int $korisnik_id, string $stranica): void
+{
+    try {
+        $upit = $pdo->prepare(
+            'INSERT INTO pristup_log (korisnik_id, ip_adresa, stranica, metod, user_agent)
+             VALUES (?, ?, ?, ?, ?)'
+        );
+        $upit->execute([
+            $korisnik_id,
+            $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+            mb_substr($stranica, 0, 255),
+            $_SERVER['REQUEST_METHOD'] ?? 'GET',
+            mb_substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255),
+        ]);
+    } catch (PDOException $e) {
+        upisi_gresku('Greška pri upisu pristupa u bazu: ' . $e->getMessage());
+    }
+}
+
 // Čita poslednjih $broj_linija iz log fajla na datoj putanji i vraća ih kao
 // niz stringova (najstarija prva, najnovija poslednja). Koristi se u admin
 // panelu za prikaz sadržaja logova bez otvaranja fajla van aplikacije.

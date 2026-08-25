@@ -8,7 +8,7 @@ if (korisnik_prijavljen()) {
     preusmeri(KORENSKI_URL . '/index.php');
 }
 
-$greska = '';
+$greska = isset($_GET['blokiran']) ? 'Vaš nalog je u međuvremenu blokiran, pa ste odjavljeni.' : '';
 $uneta_prijava = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
