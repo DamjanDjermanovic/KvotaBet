@@ -290,10 +290,14 @@ INSERT INTO uloga (id, naziv, opis) VALUES
 (2, 'operater',  'Upravlja ponudom, kvotama i rezultatima'),
 (3, 'admin',     'Puna kontrola nad sistemom');
 
+-- Bootstrap Icons nema ikonice za pojedinačne sportove, pa svi nose istu
+-- (ranije su fudbal i košarka delili 'bi-dribbble', koji je zapravo logotip
+-- sajta Dribbble, a tenis prazan krug). Zato se ikonica sporta i ne ispisuje
+-- u ponudi, već samo u operaterskom pregledu.
 INSERT INTO sport (id, naziv, ikonica) VALUES
-(1, 'Fudbal',    'bi-dribbble'),
-(2, 'Košarka',   'bi-dribbble'),
-(3, 'Tenis',     'bi-circle');
+(1, 'Fudbal',    'bi-trophy-fill'),
+(2, 'Košarka',   'bi-trophy-fill'),
+(3, 'Tenis',     'bi-trophy-fill');
 
 INSERT INTO tip_igre (sport_id, oznaka, naziv, opis) VALUES
 (1, '1',   'Pobeda domaćina',       'Domaćin pobeđuje u regularnom toku'),

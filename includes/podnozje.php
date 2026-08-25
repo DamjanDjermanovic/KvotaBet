@@ -7,9 +7,15 @@
 </div>
 </main>
 
-<footer class="bg-dark text-light py-3 mt-auto">
-    <div class="container text-center small">
-        &copy; <?= date('Y') ?> Kladionica — fakultetski projekat, simulacija sa virtuelnim novcem.
+<footer class="podnozje mt-auto">
+    <div class="container text-center">
+        &copy; <?= date('Y') ?> Kladionica — fakultetski projekat
+
+        <?php // Napomena stoji na svakoj strani da nijedan ekran ne ostavi utisak pravog uplatnog mesta ?>
+        <div class="napomena">
+            Simulacija sa virtuelnim novcem. Nema pravih uplata, platnih kartica
+            ni povezivanja sa spoljnim servisima.
+        </div>
     </div>
 </footer>
 

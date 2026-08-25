@@ -291,6 +291,103 @@ Time je zatvorena i praznina zabeležena posle faze 9: `zahtevaj_ulogu()` i
 
 ---
 
+## Usklađivanje HTML-a sa novim `css/style.css` (2026-08-25)
+
+`css/style.css` je zamenjen novim fajlom sa sopstvenim vizuelnim identitetom
+(četiri plava tona, Barlow / Barlow Condensed, semantičke boje samo za ishode).
+Menjano je **isključivo označavanje** — nijedno poslovno pravilo, upit ni
+provera prava nisu dirani.
+
+### Zaglavlje i podnožje
+- `includes/zaglavlje.php` — `.navbar-brand` sa ikonicom, link `.preskoci` na
+  vrhu `<body>` (vidljiv tek pri tabulaciji, vodi na `<main id="sadrzaj">`),
+  stanje računa u `.nav-stanje`.
+- Nova pomoćna funkcija `stavka_menija()` ispisuje stavku navigacije i sama
+  postavlja `.active` + `aria-current="page"` na tekućoj stranici. Poređenje
+  ide preko `PHP_SELF`, a ne preko naziva fajla, jer se isti naziv javlja u
+  više foldera (`transakcije.php` i kod igrača i kod admina).
+- Stanje računa se za `.nav-stanje` čita jednim `SELECT`-om u `zaglavlje.php`,
+  u `try/catch` — ako čitanje padne, navigacija se ispiše bez iznosa umesto da
+  cela stranica pukne.
+- `includes/podnozje.php` — `.podnozje` sa `.napomena` da je reč o simulaciji
+  sa virtuelnim novcem (stoji na svakoj strani, da nijedan ekran ne ostavi
+  utisak pravog uplatnog mesta).
+
+### Ponuda (`index.php`)
+- `.liga-zaglavlje` sa `.drzava`, redovi kao `.dogadjaj-red` sa
+  `.dogadjaj-vreme` (`.dan` + sat) i `.dogadjaj-timovi` (`.tim` / `.protiv`).
+- Kvote su sada `.kvota` sa `.oznaka` i `.kvota-vrednost` unutra, u
+  `.kvote-grupa`.
+- Redovi jedne lige idu u sopstveni omotač, jer stil računa gornju ivicu i
+  zaobljenje reda preko `:first-of-type` / `:last-child` — bez omotača bi
+  zaobljenje palo na poslednji red cele strane, a ne na poslednji red lige.
+- U upit je dodata kolona `l.drzava`, samo da bi `.drzava` imala šta da
+  ispiše; ostatak upita je netaknut.
+- Panel tiketa: `.tiket-panel` (bez `.card`) sa `.tiket-glava`, `.broj-parova`,
+  `.tiket-zub`, `.tiket-zbir` (`.red` / `.vrednost` / `.dobitak-red`),
+  `.tiket-prazan` i `.btn-uplati`.
+
+### Tiket (`js/tiket.js`)
+- Izabrana kvota nosi `.izabrana` umesto Bootstrap `.active` (i klik na već
+  izabranu kvotu je i dalje skida sa tiketa).
+- Stavke se grade kao `.tiket-stavka` sa `.par` / `.mec` / `.tip` i
+  `.tiket-ukloni`; `<ul class="list-group">` više nije potreban.
+- Novo: `osveziVrednostiKvota()` — server uz svaku stavku vraća **aktuelnu**
+  kvotu, pa se dugme u ponudi ispravi i nakratko zatreperi klasom
+  `.promenjena` ako je operater u međuvremenu promenio kvotu. Klasa se skida
+  na `animationend`, da bi treperenje moglo da se ponovi.
+
+### Statusi
+Svi statusi idu kroz `<span class="status status-{$status}">`. Time je
+otpalo pet funkcija koje su postojale samo da bi vratile naziv Bootstrap
+boje — `boja_statusa()`, `boja_statusa_tiketa()`, `boja_statusa_naloga()`,
+`boja_statusa_dogadjaja()` i `boja_statusa_dokumenta()`. Boju sada drži jedno
+mesto (`css/style.css`), pa se prikaz tiketa, stavke, naloga i dokumenta više
+ne mogu razići.
+
+### Ostalo
+- Iznosi u istorijama idu kroz `.iznos-plus` / `.iznos-minus` (`igrac/` i
+  `admin/transakcije.php`, isplaćeni dobitak na tiketima).
+- `admin/statistika.php` — četiri `.stat-karta` sa `.broj` i `.opis`.
+- `admin/logovi.php` — `.log-ispis` (jedino mesto sa monospace fontom).
+- `prijava.php` i `registracija.php` — `.auth-karta`; obe stranice sada
+  uključuju i Bootstrap Icons, jer ne prolaze kroz `zaglavlje.php`. Polja
+  registracije su prebačena na `col-sm-6`, pošto `.auth-karta` drži karticu
+  na 26rem pa dvokolonski red na `md` više nema mesta.
+- Sve prazne liste idu kroz `.prazno` sa ikonicom, naslovom i pozivom na
+  akciju (npr. „Još nemate nijedan tiket → Otvori ponudu"), umesto ranijeg
+  `alert alert-info`.
+- Sa naslova su skinute Bootstrap klase `h3`/`h5`, koje su svojom većom
+  specifičnošću gasile tipografsku skalu iz novog `style.css`.
+
+### Testirano
+Preko pravog Apache-a, sve 4 uloge (gost, igrač, operater, admin) i svih 21
+stranica: HTTP 200, nijedan `Fatal error`, `Warning`, `Notice` ni `Deprecated`
+u odgovoru. Provereno i da su blokovi liga u ponudi ispravno ugnežđeni (svaki
+`<div>` zatvoren) i da se `.nav-stanje`, `.nav-link.active`, `.stat-karta`,
+`.log-ispis`, `.auth-karta` i `.prazno` zaista pojavljuju u ispisu.
+
+### ~~Nedovršeno — statusi bez pravila u CSS-u~~ (REŠENO u ispravkama prikaza)
+
+_Zabeleženo ovde, rešeno u odeljku „Četiri ispravke u prikazu" — ostavljeno
+radi istorije._
+
+`css/style.css` ima pravila za `aktivan`, `blokiran`, `dobitan`, `gubitan`,
+`storniran`, `ceka`, `pogodjen`, `promasen`, `odobren`, `odbijen` i
+`na_cekanju`. Nema ih za dva rečnika iz šeme:
+
+| Kolona | Vrednosti bez pravila |
+|---|---|
+| `dogadjaj.status` | `najavljen`, `u_toku`, `zavrsen`, `otkazan` |
+| `transakcija.tip` | `uplata`, `isplata`, `ulog`, `dobitak`, `storno` |
+
+Te oznake se ispisuju sa osnovnom klasom `.status` — dobiju oblik, verzalno
+kondenzovano pismo i razmak, ali ostaju bez pozadine. Za `transakcija.tip` to
+je i ispravno (tip nije ishod, a smer već nose `.iznos-plus` / `.iznos-minus`),
+ali za status događaja bi trebalo dopisati četiri pravila u `style.css`.
+
+---
+
 ## ~~Napomena — greska.php ne postoji~~ (REŠENO u fazi 10)
 
 _Zabeleženo posle faze 9, rešeno u fazi 10 — ostavljeno radi istorije._
@@ -301,3 +398,96 @@ a ta stranica tada još nije postojala, pa je pokušaj pristupa vodio ka
 nepostojećoj adresi. Provera prava je i tada radila ispravno (pristup je bio
 blokiran), nedostajala je samo stranica na kraju preusmeravanja. Napravljena je
 u fazi 10 i provereno je da oba slučaja sada prikazuju „Zabranjen pristup".
+
+---
+
+## Četiri ispravke u prikazu (2026-08-25)
+
+Sitna doterivanja izgleda, bez ijedne izmene poslovne logike, proračuna ili
+upita koji nešto menjaju u bazi.
+
+### 1. Filter ponude — meniji različite širine (`index.php`, `css/style.css`)
+
+Pregledač padajućem meniju širinu računa po najdužoj stavci, pa je meni sporta
+(„Svi sportovi", „Fudbal", „Tenis") ispadao osetno uži od menija lige i sekao
+duže nazive. Oba `select`-a su dobila klasu `.filter-izbor` sa
+`min-width: 13rem`, pa su sada iste širine i red filtera je poravnat. Granica
+je donja, ne fiksna širina: duži naziv lige i dalje sme da raširi svoj meni.
+
+### 2. Poruka o ulogu na praznom tiketu (`js/tiket.js`)
+
+Panel je i na praznom tiketu ispisivao „Minimalni ulog je…" ili „Nemate
+dovoljno sredstava na računu" čim bi se nešto ukucalo u polje uloga — provera
+koja nema smisla dok nema nijedne stavke. `prikaziTiket()` sada ispisuje
+`ulog_greska` samo kad je `broj_stavki > 0`.
+
+Namerno je ispravljen **klijent, a ne server**: `stanje_tiketa()` i dalje vraća
+`ulog_greska` i uz prazan tiket, jer je to tačan opis unosa i jer serverska
+provera uloga ostaje netaknuta. Uplata je i pre i posle ove izmene onemogućena
+kroz `moze_uplata`, koje traži bar jednu stavku (pravilo 1) — promenjeno je
+samo kada se poruka *prikazuje*.
+
+### 3. Ikonice sportova (`baza/schema.sql`, `index.php`, `operater/sportovi.php`)
+
+Zatečeno stanje: fudbal i košarka su delili `bi-dribbble`, a tenis je imao
+`bi-circle`. `bi-dribbble` uopšte nije lopta — to je logotip sajta Dribbble
+(zajednica dizajnera), pa je stajao pogrešno na sportskoj ponudi.
+
+Ponuđena su dva rešenja; izabrano je **uklanjanje ikonice iz prikaza sporta**,
+uz `bi-trophy-fill` kao vrednost u bazi. Razlog protiv toga da svi sportovi
+samo dobiju `bi-trophy-fill` u prikazu: ikonica koja je ista za sve vrednosti
+onoga što označava ne nosi nikakvu informaciju, a naslov sporta je ionako veliki
+`<h2>` sa punim nazivom. Uz to, `.liga-zaglavlje` odmah ispod već nosi
+`bi-trophy` — pehar iznad pehara bi oslabio jedino mesto gde ta ikonica nešto
+znači. Bootstrap Icons nema zasebne ikonice za pojedinačne sportove, pa
+smisleno razlikovanje ionako nije bilo moguće.
+
+Kolona `sport.ikonica` i njen unos u operaterskom CRUD-u **ostaju** — briše se
+samo ispis u ponudi. Da polje ne bi uređivalo nešto nevidljivo, tabela u
+`operater/sportovi.php` sada uz naziv klase prikazuje i samu ikonicu, pa
+operater odmah vidi šta je uneo. `placeholder` i ikonica praznog spiska na toj
+stranici prebačeni su sa `bi-dribbble` na `bi-trophy-fill`.
+
+Postojeći redovi u bazi su usklađeni sa `schema.sql`:
+`UPDATE sport SET ikonica = 'bi-trophy-fill';`
+
+### 4. Statusi događaja u CSS-u (`css/style.css`, `operater/rezultati.php`)
+
+Dopisana su četiri pravila koja su nedostajala (vidi odeljak „Nedovršeno"
+iznad): `.status-najavljen`, `.status-u_toku`, `.status-zavrsen` i
+`.status-otkazan`.
+
+Zelena i crvena se namerno ne koriste — po dogovoru iz `style.css` one znače
+isključivo dobitak i gubitak, a događaj sam po sebi nije ni jedno ni drugo.
+Razlikuju se plavom (u ponudi, prima se tiket), žutom (počeo, čeka se rezultat)
+i neutralnom (obrađen). `otkazan` uz neutralnu boju nosi i isprekidanu ivicu,
+pa se od `zavrsen` razlikuje i bez oslanjanja na boju.
+
+Provereno gde se status događaja ispisuje — postoje tačno dva mesta i oba su
+već koristila `<span class="status status-{$status}">`, pa nije trebalo ništa
+menjati:
+
+| Mesto | Šta ispisuje |
+|---|---|
+| `operater/dogadjaji.php:248` | status u spisku svih događaja |
+| `operater/rezultati.php:235` | status u spisku obrađenih događaja |
+
+Usput ispravljeno: u spisku događaja za obradu (`operater/rezultati.php`)
+oznake „čeka rezultat" i „još nije počeo" opisuju stanje događaja, a pozajmljivale
+su boje iz rečnika tiketa (`.status-ceka`, `.status-storniran`). Prebačene su na
+`.status-u_toku` i `.status-najavljen`, pa je rečnik boja za događaje sada
+jedinstven.
+
+Vrednosti `transakcija.tip` i dalje ostaju bez sopstvenih pravila — kako je i
+zabeleženo ranije, tip transakcije nije ishod, a smer novca već nose
+`.iznos-plus` / `.iznos-minus`.
+
+### Testirano
+
+`php -l` nad izmenjenim PHP fajlovima i `curl` nad `index.php` preko pravog
+Apache-a: HTTP 200, bez `Fatal error`/`Warning`/`Notice`/`Deprecated`, oba
+`select`-a nose `.filter-izbor`, naslovi sportova se ispisuju bez ikonice
+(„Fudbal", „Košarka", „Tenis"). Operaterske stranice nisu otvarane kroz
+pregledač jer u bazi trenutno ne postoji nalog operatera — provera za njih je
+urađena poređenjem vrednosti iz `ENUM('najavljen','u_toku','zavrsen','otkazan')`
+sa imenima klasa u `style.css`.

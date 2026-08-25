@@ -120,7 +120,7 @@ $naslov_stranice = 'Rezultati';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Rezultati i obrada tiketa</h1>
+<h1 class="mb-4">Rezultati i obrada tiketa</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -129,10 +129,15 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     i dobici isplaćuju, pa se isti događaj više ne može obraditi ponovo.
 </div>
 
-<h2 class="h5 mb-3">Za obradu</h2>
+<h2 class="mb-3">Za obradu</h2>
 
 <?php if (empty($za_obradu)): ?>
-    <div class="alert alert-info">Nema događaja koji čekaju obradu.</div>
+    <div class="prazno">
+        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+        <div class="naslov-praznog">Nema događaja koji čekaju obradu</div>
+        <p class="mb-3">Svi najavljeni događaji su obrađeni.</p>
+        <a href="<?= KORENSKI_URL ?>/operater/dogadjaji.php" class="btn btn-primary btn-sm">Unesi novi događaj</a>
+    </div>
 <?php else: ?>
     <div class="table-responsive mb-5">
         <table class="table align-middle">
@@ -154,10 +159,11 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         </td>
                         <td>
                             <?= bezbedno(formatiraj_datum_vreme($dogadjaj['vreme_pocetka'])) ?>
+                            <?php // Oznaka opisuje stanje događaja, pa uzima boje iz rečnika statusa događaja ?>
                             <?php if ($vec_pocelo): ?>
-                                <span class="badge text-bg-warning d-block mt-1">čeka rezultat</span>
+                                <span class="status status-u_toku mt-1">čeka rezultat</span>
                             <?php else: ?>
-                                <span class="badge text-bg-light text-dark d-block mt-1">još nije počeo</span>
+                                <span class="status status-najavljen mt-1">još nije počeo</span>
                             <?php endif; ?>
                         </td>
                         <td><?= (int) $dogadjaj['stavki_na_cekanju'] ?></td>
@@ -191,10 +197,14 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     </div>
 <?php endif; ?>
 
-<h2 class="h5 mb-3">Obrađeni događaji</h2>
+<h2 class="mb-3">Obrađeni događaji</h2>
 
 <?php if (empty($obradjeni)): ?>
-    <div class="alert alert-info">Nijedan događaj još nije obrađen.</div>
+    <div class="prazno">
+        <i class="bi bi-clock-history" aria-hidden="true"></i>
+        <div class="naslov-praznog">Nijedan događaj još nije obrađen</div>
+        <p class="mb-0">Čim zaključite prvi događaj sa rezultatom, pojaviće se ovde.</p>
+    </div>
 <?php else: ?>
     <div class="table-responsive">
         <table class="table table-striped align-middle">
@@ -217,15 +227,13 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         <td><?= bezbedno(formatiraj_datum_vreme($dogadjaj['vreme_pocetka'])) ?></td>
                         <td>
                             <?php if ($dogadjaj['status'] === 'zavrsen'): ?>
-                                <strong><?= (int) $dogadjaj['golova_domacin'] ?> : <?= (int) $dogadjaj['golova_gost'] ?></strong>
+                                <strong class="broj"><?= (int) $dogadjaj['golova_domacin'] ?> : <?= (int) $dogadjaj['golova_gost'] ?></strong>
                             <?php else: ?>
                                 <span class="text-muted">—</span>
                             <?php endif; ?>
                         </td>
                         <td>
-                            <span class="badge text-bg-<?= $dogadjaj['status'] === 'zavrsen' ? 'success' : 'secondary' ?>">
-                                <?= bezbedno($dogadjaj['status']) ?>
-                            </span>
+                            <span class="status status-<?= bezbedno($dogadjaj['status']) ?>"><?= bezbedno($dogadjaj['status']) ?></span>
                         </td>
                         <td><?= (int) $dogadjaj['ukupno_stavki'] ?></td>
                     </tr>

@@ -142,7 +142,7 @@ $naslov_stranice = 'Tipovi igre';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Tipovi igre</h1>
+<h1 class="mb-4">Tipovi igre</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -158,7 +158,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3"><?= $tip_za_izmenu ? 'Izmena tipa igre' : 'Novi tip igre' ?></h2>
+                <h2 class="mb-3"><?= $tip_za_izmenu ? 'Izmena tipa igre' : 'Novi tip igre' ?></h2>
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
                     <input type="hidden" name="akcija" value="sacuvaj">
@@ -231,7 +231,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                             <td>
                                 <code><?= bezbedno($tip['oznaka']) ?></code>
                                 <?php if (!$poznat): ?>
-                                    <span class="badge text-bg-warning" title="Automatska obrada rezultata ne prepoznaje ovu oznaku">?</span>
+                                    <span class="status status-ceka" title="Automatska obrada rezultata ne prepoznaje ovu oznaku">?</span>
                                 <?php endif; ?>
                             </td>
                             <td><?= bezbedno($tip['naziv']) ?></td>
@@ -249,7 +249,15 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($tipovi)): ?>
-                        <tr><td colspan="5" class="text-muted">Nema unetih tipova igre.</td></tr>
+                        <tr>
+                            <td colspan="5">
+                                <div class="prazno">
+                                    <i class="bi bi-list-ol" aria-hidden="true"></i>
+                                    <div class="naslov-praznog">Nema unetih tipova igre</div>
+                                    <p class="mb-0">Bez tipa igre (1, X, 2…) ne mogu se uneti kvote za događaje.</p>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>

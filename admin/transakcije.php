@@ -271,7 +271,7 @@ $naslov_stranice = 'Transakcije';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Transakcije</h1>
+<h1 class="mb-4">Transakcije</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -307,7 +307,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3">Korektivna transakcija</h2>
+                <h2 class="mb-3">Korektivna transakcija</h2>
                 <p class="text-muted small">
                     Ručni ispravak stanja računa. Upisuje se kao redovna transakcija i odmah menja
                     stanje, pa evidencija ostaje usklađena.
@@ -389,11 +389,14 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         <tr>
                             <td class="small"><?= bezbedno(formatiraj_datum_vreme($transakcija['datum_vreme'])) ?></td>
                             <td class="small"><?= bezbedno($transakcija['korisnicko_ime']) ?></td>
-                            <td><span class="badge text-bg-secondary text-uppercase"><?= bezbedno($transakcija['tip']) ?></span></td>
-                            <td class="text-end <?= transakcija_je_priliv($transakcija['tip']) ? 'text-success' : 'text-danger' ?>">
-                                <?= transakcija_je_priliv($transakcija['tip']) ? '+' : '−' ?><?= bezbedno(formatiraj_novac($transakcija['iznos'])) ?>
+                            <td><span class="status status-<?= bezbedno($transakcija['tip']) ?>"><?= bezbedno($transakcija['tip']) ?></span></td>
+                            <td class="iznos">
+                                <?php // Smer transakcije nosi i znak i boja - .iznos-plus je zelen, .iznos-minus crven ?>
+                                <span class="<?= transakcija_je_priliv($transakcija['tip']) ? 'iznos-plus' : 'iznos-minus' ?>">
+                                    <?= transakcija_je_priliv($transakcija['tip']) ? '+' : '−' ?><?= bezbedno(formatiraj_novac($transakcija['iznos'])) ?>
+                                </span>
                             </td>
-                            <td class="text-end"><?= bezbedno(formatiraj_novac($transakcija['stanje_posle'])) ?></td>
+                            <td class="iznos"><?= bezbedno(formatiraj_novac($transakcija['stanje_posle'])) ?></td>
                             <td class="small">
                                 <form method="post" class="d-flex gap-1">
                                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
@@ -404,7 +407,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                                     <button type="submit" class="btn btn-sm btn-outline-primary py-0" title="Sačuvaj opis">&check;</button>
                                 </form>
                                 <?php if ($transakcija['broj_tiketa']): ?>
-                                    <span class="badge text-bg-light text-dark mt-1"><?= bezbedno($transakcija['broj_tiketa']) ?></span>
+                                    <span class="status status-storniran mt-1"><?= bezbedno($transakcija['broj_tiketa']) ?></span>
                                 <?php endif; ?>
                             </td>
                             <td class="text-end">
@@ -420,7 +423,15 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($transakcije)): ?>
-                        <tr><td colspan="7" class="text-muted">Nema transakcija za prikaz.</td></tr>
+                        <tr>
+                            <td colspan="7">
+                                <div class="prazno">
+                                    <i class="bi bi-cash-stack" aria-hidden="true"></i>
+                                    <div class="naslov-praznog">Nema transakcija za prikaz</div>
+                                    <p class="mb-0">Promenite filter po korisniku ili upišite korektivnu transakciju levo.</p>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>

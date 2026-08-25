@@ -130,7 +130,7 @@ $naslov_stranice = 'Kvote';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-1">Kvote</h1>
+<h1 class="mb-1">Kvote</h1>
 <p class="text-muted mb-4">
     <?= bezbedno($dogadjaj['domacin_naziv']) ?> — <?= bezbedno($dogadjaj['gost_naziv']) ?>
     <span class="mx-1">·</span> <?= bezbedno($dogadjaj['sport_naziv']) ?> / <?= bezbedno($dogadjaj['liga_naziv']) ?>
@@ -145,7 +145,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3">Nova kvota</h2>
+                <h2 class="mb-3">Nova kvota</h2>
                 <?php if (empty($slobodni_tipovi)): ?>
                     <p class="text-muted small mb-0">Svi tipovi igre za ovaj sport već imaju kvotu na ovom događaju.</p>
                 <?php else: ?>
@@ -222,7 +222,15 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($kvote)): ?>
-                        <tr><td colspan="3" class="text-muted">Nema unetih kvota za ovaj događaj.</td></tr>
+                        <tr>
+                            <td colspan="3">
+                                <div class="prazno">
+                                    <i class="bi bi-percent" aria-hidden="true"></i>
+                                    <div class="naslov-praznog">Nema unetih kvota za ovaj događaj</div>
+                                    <p class="mb-0">Bez bar jedne kvote događaj se ne prikazuje u javnoj ponudi.</p>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>

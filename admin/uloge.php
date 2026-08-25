@@ -87,7 +87,7 @@ $naslov_stranice = 'Uloge';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Uloge</h1>
+<h1 class="mb-4">Uloge</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -95,7 +95,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3"><?= $uloga_za_izmenu ? 'Izmena uloge' : 'Nova uloga' ?></h2>
+                <h2 class="mb-3"><?= $uloga_za_izmenu ? 'Izmena uloge' : 'Nova uloga' ?></h2>
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
                     <input type="hidden" name="akcija" value="sacuvaj">

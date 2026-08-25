@@ -277,22 +277,15 @@ try {
     $tiketi = [];
 }
 
-function boja_statusa_tiketa(string $status): string
-{
-    return match ($status) {
-        'dobitan' => 'success',
-        'gubitan' => 'danger',
-        'storniran' => 'secondary',
-        default => 'primary',
-    };
-}
+// Napomena: boju statusa više ne bira PHP - nosi je klasa .status-<vrednost>
+// iz css/style.css, ista na svim stranicama koje prikazuju status.
 
 $csrf_token = generisi_csrf_token();
 $naslov_stranice = 'Tiketi';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Svi tiketi</h1>
+<h1 class="mb-4">Svi tiketi</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -312,7 +305,12 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
 </ul>
 
 <?php if (empty($tiketi)): ?>
-    <div class="alert alert-info">Nema tiketa za prikaz.</div>
+    <div class="prazno">
+        <i class="bi bi-receipt-cutoff" aria-hidden="true"></i>
+        <div class="naslov-praznog">Nema tiketa za prikaz</div>
+        <p class="mb-3">Za izabrani status nema nijednog tiketa.</p>
+        <a href="<?= KORENSKI_URL ?>/admin/tiketi.php?status=svi" class="btn btn-primary btn-sm">Prikaži sve tikete</a>
+    </div>
 <?php else: ?>
     <?php foreach ($tiketi as $tiket): ?>
         <div class="card mb-3">
@@ -321,18 +319,18 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                     <div>
                         <div class="fw-semibold">
                             <?= bezbedno($tiket['broj_tiketa']) ?>
-                            <span class="badge text-bg-<?= boja_statusa_tiketa($tiket['status']) ?> ms-1"><?= bezbedno($tiket['status']) ?></span>
+                            <span class="status status-<?= bezbedno($tiket['status']) ?> ms-1"><?= bezbedno($tiket['status']) ?></span>
                         </div>
                         <div class="text-muted small">
                             <?= bezbedno($tiket['korisnicko_ime']) ?> ·
                             <?= bezbedno(formatiraj_datum_vreme($tiket['datum_uplate'])) ?>
                         </div>
                         <div class="small mt-1">
-                            Ulog <?= bezbedno(formatiraj_novac($tiket['ulog'])) ?> ·
-                            kvota <?= number_format((float) $tiket['ukupna_kvota'], 2) ?> ·
-                            potencijalno <?= bezbedno(formatiraj_novac($tiket['potencijalni_dobitak'])) ?>
+                            Ulog <span class="iznos"><?= bezbedno(formatiraj_novac($tiket['ulog'])) ?></span> ·
+                            kvota <span class="broj"><?= number_format((float) $tiket['ukupna_kvota'], 2) ?></span> ·
+                            potencijalno <span class="iznos"><?= bezbedno(formatiraj_novac($tiket['potencijalni_dobitak'])) ?></span>
                             <?php if ((float) $tiket['isplaceno'] > 0): ?>
-                                · <span class="text-success">isplaćeno <?= bezbedno(formatiraj_novac($tiket['isplaceno'])) ?></span>
+                                · <span class="iznos-plus">isplaćeno +<?= bezbedno(formatiraj_novac($tiket['isplaceno'])) ?></span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -372,7 +370,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                             <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
                                 <div class="small">
                                     <?= bezbedno($stavka['domacin']) ?> — <?= bezbedno($stavka['gost']) ?>
-                                    <span class="badge text-bg-primary ms-1"><?= bezbedno($stavka['oznaka']) ?> <?= number_format((float) $stavka['kvota_vrednost'], 2) ?></span>
+                                    <span class="kvota-vrednost fw-semibold ms-1"><?= bezbedno($stavka['oznaka']) ?> <?= number_format((float) $stavka['kvota_vrednost'], 2) ?></span>
                                 </div>
                                 <div class="d-flex gap-1 align-items-center">
                                     <form method="post" class="d-flex gap-1"

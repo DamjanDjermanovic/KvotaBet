@@ -32,10 +32,15 @@ $naslov_stranice = 'Transakcije';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Istorija transakcija</h1>
+<h1 class="mb-4">Istorija transakcija</h1>
 
 <?php if (empty($transakcije)): ?>
-    <div class="alert alert-info">Nema još nijedne transakcije na vašem računu.</div>
+    <div class="prazno">
+        <i class="bi bi-cash-stack" aria-hidden="true"></i>
+        <div class="naslov-praznog">Nema još nijedne transakcije</div>
+        <p class="mb-3">Svaka promena stanja računa pojaviće se ovde.</p>
+        <a href="<?= KORENSKI_URL ?>/igrac/uplata.php" class="btn btn-primary btn-sm">Uplati sredstva</a>
+    </div>
 <?php else: ?>
     <div class="table-responsive">
         <table class="table table-striped align-middle">
@@ -52,17 +57,20 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                 <?php foreach ($transakcije as $t): ?>
                     <tr>
                         <td><?= bezbedno(formatiraj_datum_vreme($t['datum_vreme'])) ?></td>
-                        <td><span class="badge text-bg-secondary text-uppercase"><?= bezbedno($t['tip']) ?></span></td>
+                        <td><span class="status status-<?= bezbedno($t['tip']) ?>"><?= bezbedno($t['tip']) ?></span></td>
                         <td>
                             <?= bezbedno($t['opis']) ?>
                             <?php if ($t['broj_tiketa']): ?>
                                 <span class="text-muted small">(<?= bezbedno($t['broj_tiketa']) ?>)</span>
                             <?php endif; ?>
                         </td>
-                        <td class="text-end <?= transakcija_je_priliv($t['tip']) ? 'text-success' : 'text-danger' ?>">
-                            <?= transakcija_je_priliv($t['tip']) ? '+' : '−' ?><?= bezbedno(formatiraj_novac($t['iznos'])) ?>
+                        <td class="iznos">
+                            <?php // Smer transakcije nosi i znak i boja - .iznos-plus je zelen, .iznos-minus crven ?>
+                            <span class="<?= transakcija_je_priliv($t['tip']) ? 'iznos-plus' : 'iznos-minus' ?>">
+                                <?= transakcija_je_priliv($t['tip']) ? '+' : '−' ?><?= bezbedno(formatiraj_novac($t['iznos'])) ?>
+                            </span>
                         </td>
-                        <td class="text-end"><?= bezbedno(formatiraj_novac($t['stanje_posle'])) ?></td>
+                        <td class="iznos"><?= bezbedno(formatiraj_novac($t['stanje_posle'])) ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

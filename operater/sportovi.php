@@ -81,7 +81,7 @@ $naslov_stranice = 'Sportovi';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Sportovi</h1>
+<h1 class="mb-4">Sportovi</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -89,7 +89,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3"><?= $sport_za_izmenu ? 'Izmena sporta' : 'Novi sport' ?></h2>
+                <h2 class="mb-3"><?= $sport_za_izmenu ? 'Izmena sporta' : 'Novi sport' ?></h2>
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
                     <input type="hidden" name="akcija" value="sacuvaj">
@@ -105,7 +105,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
 
                     <div class="mb-2">
                         <label for="ikonica" class="form-label">Bootstrap ikonica <span class="text-muted">(opciono)</span></label>
-                        <input type="text" class="form-control" id="ikonica" name="ikonica" maxlength="50" placeholder="bi-dribbble"
+                        <input type="text" class="form-control" id="ikonica" name="ikonica" maxlength="50" placeholder="bi-trophy-fill"
                                value="<?= bezbedno($sport_za_izmenu['ikonica'] ?? '') ?>">
                     </div>
 
@@ -139,8 +139,14 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                     <?php foreach ($sportovi as $sport): ?>
                         <tr>
                             <td><?= bezbedno($sport['naziv']) ?></td>
-                            <td><code><?= bezbedno($sport['ikonica'] ?? '') ?></code></td>
-                            <td><?= $sport['aktivan'] ? '<span class="badge text-bg-success">da</span>' : '<span class="badge text-bg-secondary">ne</span>' ?></td>
+                            <?php // Uz naziv klase ide i sama ikonica, da operater odmah vidi šta je uneo ?>
+                            <td>
+                                <?php if (!empty($sport['ikonica'])): ?>
+                                    <i class="bi <?= bezbedno($sport['ikonica']) ?>" aria-hidden="true"></i>
+                                <?php endif; ?>
+                                <code><?= bezbedno($sport['ikonica'] ?? '') ?></code>
+                            </td>
+                            <td><?= $sport['aktivan'] ? '<span class="status status-aktivan">da</span>' : '<span class="status status-storniran">ne</span>' ?></td>
                             <td class="text-end">
                                 <a href="<?= KORENSKI_URL ?>/operater/lige.php?sport_id=<?= (int) $sport['id'] ?>" class="btn btn-sm btn-outline-secondary">Lige</a>
                                 <a href="<?= KORENSKI_URL ?>/operater/sportovi.php?izmeni=<?= (int) $sport['id'] ?>" class="btn btn-sm btn-outline-primary">Izmeni</a>
@@ -154,7 +160,15 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($sportovi)): ?>
-                        <tr><td colspan="4" class="text-muted">Nema unetih sportova.</td></tr>
+                        <tr>
+                            <td colspan="4">
+                                <div class="prazno">
+                                    <i class="bi bi-trophy-fill" aria-hidden="true"></i>
+                                    <div class="naslov-praznog">Nema unetih sportova</div>
+                                    <p class="mb-0">Sport je prvi korak — bez njega nema ni liga, ni timova, ni ponude.</p>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>

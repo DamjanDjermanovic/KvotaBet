@@ -142,24 +142,15 @@ try {
     $dogadjaji = [];
 }
 
-// Boja bedža statusa događaja u tabeli
-function boja_statusa_dogadjaja(string $status): string
-{
-    return match ($status) {
-        'najavljen' => 'primary',
-        'u_toku' => 'warning',
-        'zavrsen' => 'success',
-        'otkazan' => 'secondary',
-        default => 'secondary',
-    };
-}
+// Napomena: boju statusa događaja više ne bira PHP - nosi je klasa
+// .status-<vrednost> iz css/style.css, ista kao za tikete, naloge i dokumenta.
 
 $csrf_token = generisi_csrf_token();
 $naslov_stranice = 'Događaji';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Događaji</h1>
+<h1 class="mb-4">Događaji</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -167,7 +158,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3"><?= $dogadjaj_za_izmenu ? 'Izmena događaja' : 'Novi događaj' ?></h2>
+                <h2 class="mb-3"><?= $dogadjaj_za_izmenu ? 'Izmena događaja' : 'Novi događaj' ?></h2>
                 <form method="post" id="forma-dogadjaj">
                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
                     <input type="hidden" name="akcija" value="sacuvaj">
@@ -254,9 +245,9 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                             <td><?= bezbedno($dogadjaj['sport_naziv']) ?> / <?= bezbedno($dogadjaj['liga_naziv']) ?></td>
                             <td><?= bezbedno(formatiraj_datum_vreme($dogadjaj['vreme_pocetka'])) ?></td>
                             <td>
-                                <span class="badge text-bg-<?= boja_statusa_dogadjaja($dogadjaj['status']) ?>"><?= bezbedno($dogadjaj['status']) ?></span>
+                                <span class="status status-<?= bezbedno($dogadjaj['status']) ?>"><?= bezbedno($dogadjaj['status']) ?></span>
                                 <?php if ($dogadjaj['status'] === 'zavrsen' && $dogadjaj['golova_domacin'] !== null): ?>
-                                    <div class="small mt-1"><?= (int) $dogadjaj['golova_domacin'] ?> : <?= (int) $dogadjaj['golova_gost'] ?></div>
+                                    <div class="small mt-1 broj"><?= (int) $dogadjaj['golova_domacin'] ?> : <?= (int) $dogadjaj['golova_gost'] ?></div>
                                 <?php endif; ?>
                             </td>
                             <td><?= (int) $dogadjaj['broj_kvota'] ?></td>
@@ -265,7 +256,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
 
                                 <?php if ($obradjen): ?>
                                     <?php // Obrađen događaj se ne menja i ne briše - tiketi su rešeni po njemu ?>
-                                    <span class="badge text-bg-light text-dark">obrađen</span>
+                                    <span class="status status-storniran">obrađen</span>
                                 <?php else: ?>
                                     <a href="<?= KORENSKI_URL ?>/operater/dogadjaji.php?izmeni=<?= (int) $dogadjaj['id'] ?>" class="btn btn-sm btn-outline-primary">Izmeni</a>
                                     <a href="<?= KORENSKI_URL ?>/operater/rezultati.php" class="btn btn-sm btn-outline-success">Rezultat</a>
@@ -280,7 +271,15 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($dogadjaji)): ?>
-                        <tr><td colspan="6" class="text-muted">Nema unetih događaja.</td></tr>
+                        <tr>
+                            <td colspan="6">
+                                <div class="prazno">
+                                    <i class="bi bi-calendar-plus" aria-hidden="true"></i>
+                                    <div class="naslov-praznog">Nema unetih događaja</div>
+                                    <p class="mb-0">Novi događaj se dodaje formom levo, a kvote mu se unose posle toga.</p>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>

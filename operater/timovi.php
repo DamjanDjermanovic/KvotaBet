@@ -100,7 +100,7 @@ $naslov_stranice = 'Timovi';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Timovi</h1>
+<h1 class="mb-4">Timovi</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -108,7 +108,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3"><?= $tim_za_izmenu ? 'Izmena tima' : 'Novi tim' ?></h2>
+                <h2 class="mb-3"><?= $tim_za_izmenu ? 'Izmena tima' : 'Novi tim' ?></h2>
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
                     <input type="hidden" name="akcija" value="sacuvaj">
@@ -178,7 +178,15 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($timovi)): ?>
-                        <tr><td colspan="3" class="text-muted">Nema unetih timova.</td></tr>
+                        <tr>
+                            <td colspan="3">
+                                <div class="prazno">
+                                    <i class="bi bi-people" aria-hidden="true"></i>
+                                    <div class="naslov-praznog">Nema unetih timova</div>
+                                    <p class="mb-0">Da bi se napravio događaj, ligi trebaju bar dva tima.</p>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
