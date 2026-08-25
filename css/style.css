@@ -9,3 +9,12 @@ body {
     border: none;
     border-radius: 0.75rem;
 }
+
+/* Na širim ekranima panel tiketa prati skrolovanje ponude, da igrač ne mora
+   da se vraća na vrh strane posle svakog dodatog para */
+@media (min-width: 992px) {
+    .tiket-panel {
+        position: sticky;
+        top: 1rem;
+    }
+}
