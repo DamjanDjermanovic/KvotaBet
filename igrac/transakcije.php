@@ -24,11 +24,9 @@ try {
     upisi_gresku('Greška pri učitavanju istorije transakcija: ' . $e->getMessage());
 }
 
-// Predznak i boja u prikazu - "prilivi" su zeleni, "odlivi" crveni
-function je_priliv(string $tip): bool
-{
-    return in_array($tip, ['uplata', 'dobitak', 'storno'], true);
-}
+// Predznak i boja u prikazu - "prilivi" su zeleni, "odlivi" crveni.
+// Sama provera je u includes/funkcije.php (transakcija_je_priliv), da bi
+// prikaz i preračunavanje stanja računa koristili isto pravilo.
 
 $naslov_stranice = 'Transakcije';
 require_once __DIR__ . '/../includes/zaglavlje.php';
@@ -61,8 +59,8 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                                 <span class="text-muted small">(<?= bezbedno($t['broj_tiketa']) ?>)</span>
                             <?php endif; ?>
                         </td>
-                        <td class="text-end <?= je_priliv($t['tip']) ? 'text-success' : 'text-danger' ?>">
-                            <?= je_priliv($t['tip']) ? '+' : '−' ?><?= bezbedno(formatiraj_novac($t['iznos'])) ?>
+                        <td class="text-end <?= transakcija_je_priliv($t['tip']) ? 'text-success' : 'text-danger' ?>">
+                            <?= transakcija_je_priliv($t['tip']) ? '+' : '−' ?><?= bezbedno(formatiraj_novac($t['iznos'])) ?>
                         </td>
                         <td class="text-end"><?= bezbedno(formatiraj_novac($t['stanje_posle'])) ?></td>
                     </tr>

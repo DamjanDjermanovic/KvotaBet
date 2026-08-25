@@ -70,6 +70,22 @@ function generisi_broj_tiketa(): string
     return 'T-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(4)));
 }
 
+// Da li tip transakcije uvećava stanje računa (priliv) ili ga umanjuje (odliv).
+// Jedno mesto istine za znak transakcije - koriste ga i prikaz istorije i
+// preračunavanje stanja računa, pa ne smeju da se raziđu.
+function transakcija_je_priliv(string $tip): bool
+{
+    return in_array($tip, ['uplata', 'dobitak', 'storno'], true);
+}
+
+// Priprema novčani iznos ili kvotu za upis u DECIMAL kolonu: uvek dve decimale,
+// tačka kao separator i bez razdvajanja hiljada. Sprečava da PHP veliki float
+// pretvori u zapis sa eksponentom, koji baza ne bi ispravno pročitala.
+function za_bazu(float $iznos): string
+{
+    return number_format($iznos, 2, '.', '');
+}
+
 // Upamti poruku za ispis posle sledećeg preusmeravanja (tzv. "flash" poruka).
 // Koristi se posle CRUD akcija: stranica obradi POST, preusmeri na samu sebe
 // (da osvežavanje ne ponovi slanje forme), a poruka o uspehu/grešci preživi

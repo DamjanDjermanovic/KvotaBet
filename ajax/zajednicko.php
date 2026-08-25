@@ -4,6 +4,10 @@
 // AJAX zahtev ne sme da bude preusmeren na stranicu za prijavu, jer fetch()
 // očekuje JSON, a ne HTML.
 
+// Mora se definisati PRE uključivanja autentifikacije (koja povlači
+// includes/greske.php), da bi i neuhvaćena greška vratila JSON, a ne HTML
+define('AJAX_ZAHTEV', true);
+
 require_once __DIR__ . '/../includes/autentifikacija.php';
 
 header('Content-Type: application/json; charset=utf-8');

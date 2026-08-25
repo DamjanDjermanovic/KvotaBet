@@ -30,6 +30,19 @@ function upisi_gresku(string $poruka): void
     file_put_contents(PUTANJA_LOG_GRESKE, $red, FILE_APPEND | LOCK_EX);
 }
 
+// Ostavlja trag o destruktivnoj akciji (brisanje zapisa, ručna izmena stanja
+// računa i slično) u istom fajlu gde i greške, ali sa prefiksom TRAG da bi se
+// razlikovao od stvarnih grešaka. Cilj je da se uvek zna ko je šta obrisao,
+// pošto obrisani red iz baze više nema ko da posvedoči o sebi.
+function upisi_trag(string $ko, string $akcija): void
+{
+    $vreme = date('Y-m-d H:i:s');
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $red = "[$vreme] TRAG | $ip | $ko | $akcija" . PHP_EOL;
+
+    file_put_contents(PUTANJA_LOG_GRESKE, $red, FILE_APPEND | LOCK_EX);
+}
+
 // Upisuje jedan red u tabelu pristup_log u bazi - isti pristup kao
 // upisi_pristup(), samo u obliku pogodnom za upite (statistika u admin panelu
 // filtrira i grupiše po ovoj tabeli, a tekstualni fajl ostaje kao nezavisan trag).
