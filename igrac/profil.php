@@ -28,9 +28,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = trim($_POST['email'] ?? '');
         $telefon = trim($_POST['telefon'] ?? '');
 
-        if (!validno_ime($ime)) {
+        // Isto pravilo kao u admin/korisnici.php: da li su ime i prezime
+        // obavezni zavisi od uloge. Ovu stranicu otvara samo igrač (provera je
+        // na vrhu fajla), pa su ovde uvek obavezni - odluka se ipak čita iz
+        // iste funkcije, da o tome ne bi odlučivala dva mesta u kodu.
+        $ime_je_obavezno = ime_obavezno_za_ulogu(trenutna_uloga());
+
+        if (!ime_zadovoljava($ime, $ime_je_obavezno)) {
             postavi_poruku('danger', 'Ime mora imati 2-50 slova.');
-        } elseif (!validno_ime($prezime)) {
+        } elseif (!ime_zadovoljava($prezime, $ime_je_obavezno)) {
             postavi_poruku('danger', 'Prezime mora imati 2-50 slova.');
         } elseif (!validan_email($email)) {
             postavi_poruku('danger', 'Unesite ispravnu email adresu.');
@@ -152,15 +158,23 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         <input type="text" class="form-control" value="<?= bezbedno($korisnik['korisnicko_ime']) ?>" disabled>
                     </div>
 
+                    <?php
+                    // Igraču su ime i prezime obavezni (vezuju se za verifikacioni
+                    // dokument), pa je required uvek postavljen. Uslov se ipak
+                    // ispisuje iz iste funkcije kao i provera na serveru.
+                    $ime_obavezno_na_formi = ime_obavezno_za_ulogu(trenutna_uloga());
+                    ?>
                     <div class="row">
                         <div class="col-md-6 mb-2">
                             <label for="ime" class="form-label">Ime</label>
-                            <input type="text" class="form-control" id="ime" name="ime" required minlength="2" maxlength="50"
+                            <input type="text" class="form-control" id="ime" name="ime" minlength="2" maxlength="50"
+                                   <?= $ime_obavezno_na_formi ? 'required' : '' ?>
                                    value="<?= bezbedno($korisnik['ime']) ?>">
                         </div>
                         <div class="col-md-6 mb-2">
                             <label for="prezime" class="form-label">Prezime</label>
-                            <input type="text" class="form-control" id="prezime" name="prezime" required minlength="2" maxlength="50"
+                            <input type="text" class="form-control" id="prezime" name="prezime" minlength="2" maxlength="50"
+                                   <?= $ime_obavezno_na_formi ? 'required' : '' ?>
                                    value="<?= bezbedno($korisnik['prezime']) ?>">
                         </div>
                     </div>
@@ -262,6 +276,6 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
 </div>
 
 <?php
-$dodatne_skripte = ['validacija.js'];
+$dodatne_skripte = ['validacija.js', 'lozinka.js'];
 require_once __DIR__ . '/../includes/podnozje.php';
 ?>

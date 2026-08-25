@@ -491,3 +491,191 @@ Apache-a: HTTP 200, bez `Fatal error`/`Warning`/`Notice`/`Deprecated`, oba
 pregledač jer u bazi trenutno ne postoji nalog operatera — provera za njih je
 urađena poređenjem vrednosti iz `ENUM('najavljen','u_toku','zavrsen','otkazan')`
 sa imenima klasa u `style.css`.
+
+---
+
+## Grafikoni u statistici i sedam sitnih izmena (2026-08-25)
+
+### 1. Chart.js u `admin/statistika.php`
+
+Dodata su dva grafikona **iznad** postojećih brojki i tabela; nijedan
+postojeći upit, broj ni tabela nije menjan.
+
+- **Linijski** — pristupi po danu za poslednjih 14 dana. Ide preko sopstvenog
+  upita (pripremljen, sa početnim danom kao parametrom), jer lista ispod
+  njega pokriva 7 dana i ostaje takva. Upit vraća samo dane u kojima je bilo
+  pristupa, pa se prazni dani dopunjuju nulama u PHP-u — bez toga se pad na
+  nulu ne bi video kao pad, nego kao rupa u liniji.
+- **Kružni** — raspodela pristupa po ulogama, sa sopstvenom legendom u HTML-u
+  (naziv, broj i udeo), pa se kriška može pročitati i kad se tonovi ne
+  razlikuju.
+
+Chart.js se povezuje sa CDN-a, kao Bootstrap. Oznaka `<script>` stoji u samoj
+`statistika.php`, a ne u zaglavlju, da se biblioteka učitava samo tamo gde se
+koristi. Ako CDN nije dostupan (odbrana bez interneta), `js/statistika.js`
+ispisuje kratku poruku umesto praznog platna — brojke i tabele su i dalje tu.
+
+**Boje.** PHP šalje *nazive promenljivih* iz `css/style.css`
+(`--plava-500`, `--mornar-700`…), a JS ih čita iz stila. Nijedna heks
+vrednost se ne ponavlja u JS-u, pa paleta i dalje ima jedno mesto istine.
+
+Uloge nisu ravnopravne kategorije nego stepenice ovlašćenja
+(gost → igrac → operater → admin), pa nose jednu boju u četiri tona — što više
+prava, tamniji ton. Redosled je vezan za ulogu, a ne za broj pristupa, da isti
+nalog ne menja boju kad se podaci promene. Uloge koje admin naknadno doda kroz
+`admin/uloge.php` skupljaju se u jednu sivu krišku „ostale uloge"; izmišljanje
+novih tonova plave dalo bi boje koje se ne razlikuju.
+
+Prvi izbor tonova (`--plava-400`, `--plava-500`, `--mornar-700`,
+`--mornar-800`) je **odbačen** — izmereno je da razlika između `--mornar-700`
+i `--mornar-800` iznosi svega ΔE 5.9, pa su te dve kriške bile praktično
+nerazlučive. Zamenom `--mornar-800` sa `--mornar-900` razmak je porastao na
+prihvatljiv, uz zadržan smer svetlo → tamno.
+
+Za linijski grafikon (jedna serija) legenda nije potrebna — naslov kartice
+kaže šta se crta; ispisuje se samo vrednost iznad poslednje i najviše tačke,
+jer četrnaest brojeva preko linije niko ne čita.
+
+Uz linijski grafikon ide i ista serija kao tabela sa klasom
+`.visually-hidden`: platno je slika i čitač ekrana iz njega ne vidi ništa, a
+tih 14 brojeva ne postoji ni u jednoj vidljivoj tabeli na stranici.
+
+### 2. `.kvota.izabrana:hover` (`css/style.css`)
+
+Pravilo **nije postojalo** u fajlu — `git status` je pokazao `css/style.css`
+kao neizmenjen u odnosu na poslednji commit. Greška na koju je ukazano je
+ipak stvarna i pravilo je sada dopisano.
+
+Uzrok: `.kvota:hover` i `.kvota.izabrana` imaju **istu težinu** (po dve
+klase). `.kvota.izabrana` stoji niže u fajlu i pobeđuje za boju teksta
+(bela), ali `background` postavlja samo `.kvota:hover` — i to na svetlo
+`#f0f7fc`. Prelaskom miša preko već izabrane kvote broj je postajao beo na
+skoro belom: odnos kontrasta **1.08:1**, nečitljivo (van prelaska je 5.70:1).
+
+Izabrana kvota sada pri prelasku potamni na `--mornar-700` (13.92:1) umesto
+da posvetli, pa i dalje javlja da je dugme živo.
+
+### 3. Prikaz lozinke (`js/lozinka.js`, 4 stranice)
+
+Dugme sa ikonicom oka (`bi-eye` / `bi-eye-slash`) pored svakog polja za
+lozinku: registracija, prijava, `igrac/profil.php`, `admin/korisnici.php`
+(ukupno sedam polja).
+
+Dugme pravi JS, a ne PHP — ako je JavaScript isključen, dugmeta nema, umesto
+da stoji na formi i ne radi ništa. Skripta sama pronalazi sva polja
+`input[type="password"]`, pa nijedna forma nije morala da se menja.
+
+Dva detalja: polje se pri slanju forme vraća u skriveno stanje (da lozinka ne
+ostane ispisana ako se stranica vrati sa greškom), a poruka `.invalid-feedback`
+se premešta unutar novog `.input-group` uz klasu `.has-validation` — inače je
+Bootstrap ne bi prikazao.
+
+### 4. `validan_email()` (`includes/validacija.php`)
+
+`filter_var` je zadržan kao polazna tačka i dopunjen proverama dužine
+(ukupno 120 = širina kolone, lokalni deo 64 po standardu), zabranom uzastopnih
+tačaka i zahtevom da domen ima bar jednu tačku.
+
+Provereno šta `filter_var` u PHP 8.2 zaista propušta: `pera@localhost`,
+`a..b@example.com` i `.pera@example.com` već odbija sam, ali **propušta**
+`"a..b"@example.com` — navodnici u lokalnom delu zaobilaze zabranu uzastopnih
+tačaka. To je stvarna rupa koju nove provere zatvaraju. Ostale su namerno
+zadržane iako se preklapaju sa `filter_var`: ponašanje tog filtera se menjalo
+kroz verzije PHP-a, a ovako pravilo stoji izričito u kodu.
+
+Sopstveni regularni izraz za celu adresu **nije** korišćen — takvi izrazi po
+pravilu odbiju i ispravne adrese (znak `+`, poddomeni, nove vrhunske domene),
+što je gora greška od propuštanja neke retke neispravne. Provereno na 20
+adresa: sedam ispravnih prolazi, trinaest neispravnih pada.
+
+### 5. Ikonica sporta iz spiska (`operater/sportovi.php`, `js/operater.js`)
+
+Slobodan unos je zamenjen padajućim menijem sa 17 ikonica, uz opis pored svake
+(„Meta — pikado, streljaštvo"), jer naziv klase sam po sebi ne govori šta se
+vidi. Pored menija stoji pregled izabrane ikonice: prvi prikaz ispisuje PHP,
+`js/operater.js` ga menja pri svakom izboru.
+
+Isti niz je i spisak dozvoljenih vrednosti pri **proveri na serveru** —
+padajući meni je samo udobnost, a poslata vrednost se ne uzima zdravo za
+gotovo. Provereno slanjem `ikonica=bi-nepostojeca-ikonica` mimo forme:
+odbijeno.
+
+Izuzetak: vrednost koja već stoji u bazi za taj sport prolazi i kad nije na
+spisku (mogla je biti upisana dok je polje bilo slobodan unos). Forma je nudi
+kao „postojeća, van spiska", pa izmena naziva sporta ne pada zbog zatečene
+ikonice, niti je nečujno briše.
+
+### 6. Ime i prezime obavezni samo za igrača
+
+Ime i prezime igrača vezuju se za verifikacioni dokument i moraju se poklopiti
+sa njim, pa se traže. Operater i administrator su radni nalozi — prepoznaju se
+po korisničkom imenu.
+
+Pravilo stoji na **jednom mestu**, u `ime_obavezno_za_ulogu()`
+(`includes/validacija.php`), i odatle ga čitaju i provera na serveru i atribut
+`required` u HTML-u, i u `admin/korisnici.php` i u `igrac/profil.php`. Uz njega
+idu `validno_ime_ili_prazno()` i `ime_zadovoljava()`.
+
+Kad su ime i prezime prazni, u prikazu se koristi korisničko ime —
+`ime_za_prikaz()` u `includes/funkcije.php`. Primenjeno na dva mesta gde se
+operater i admin zaista pojavljuju: spisak korisnika i „najaktivniji korisnici"
+u statistici. Spiskovi dokumenata su izostavljeni jer dokumenta šalju samo
+igrači, kojima je ime obavezno.
+
+`js/korisnici.js` pali i gasi `required` pri promeni uloge — bez toga pregledač
+ne bi dao da se forma pošalje za operatera sa praznim imenom. Koje uloge traže
+ime stiže sa servera, kao `data-trazi-ime` na stavkama menija, da spisak uloga
+i dalje postoji samo u bazi.
+
+Uloge se sada čitaju **pre** obrade forme, a ne tek pred ispis, jer obrada mora
+znati naziv izabrane uloge.
+
+### 7. Napomena iznad forme za registraciju
+
+Iznad forme je dodato istaknuto obaveštenje da je usluga namenjena punoletnim
+licima i da je reč o simulaciji sa virtuelnim novcem. Provera 18+ je i dalje
+tamo gde je i bila (i na klijentu i na serveru), ali je to provera koju
+korisnik vidi tek kad pogreši.
+
+**Uklonjena je** ranija sitna napomena ispod forme („Simulacija sa virtuelnim
+novcem — registracija je dozvoljena od 18 godina."), jer je govorila isto to —
+ista dva podatka dvaput na jednoj kratkoj stranici. Registracija i prijava
+imaju sopstveni HTML, bez zajedničkog podnožja, pa napomena iz `podnozje.php`
+na njih ionako ne stiže.
+
+### 8. Sitnice u `admin/korisnici.php`
+
+`autocomplete="off"` na formi, jer admin njome otvara **tuđe** naloge i ne
+treba mu ponuda sopstvenih upamćenih podataka. Na polju za lozinku stoji
+`autocomplete="new-password"`, jer pregledači za lozinke po pravilu ne poštuju
+`off`.
+
+Oznaka „to ste vi" premeštena je iz kolone sa akcijama ispod korisničkog imena
+— govori ko je korisnik, a ne šta se sa njim može. Dobila je klasu
+`.status-ja` (plava iz osnovne palete): nije ni ishod ni stanje, pa ne uzima
+ni zelenu ni crvenu.
+
+### Testirano
+
+`php -l` nad svim izmenjenim PHP fajlovima, pa PHP dev server + MariaDB, kroz
+privremeni admin nalog (obrisan po završetku, zajedno sa svim probnim
+sportovima i korisnicima — u bazi su ostala samo zatečena 4 naloga):
+
+| Provera | Ishod |
+|---|---|
+| `admin/statistika.php`, `admin/korisnici.php`, `operater/sportovi.php` | HTTP 200 |
+| Podaci grafikona | svih 14 dana u nizu, uključujući dane bez pristupa; četiri uloge sa tonovima iz palete |
+| Grafikoni iscrtani | oba, snimkom ekrana iz pregledača (Chart.js sa CDN-a) |
+| Operater bez imena i prezimena | sačuvan |
+| Igrač bez imena i prezimena | odbijen |
+| Operater sa imenom „X" | odbijen (ako se unosi, mora biti ispravno) |
+| Prikaz operatera bez imena | ispisano korisničko ime |
+| `required` na formi | postoji za igrača, nema ga za operatera |
+| Ikonica van spiska, poslata mimo forme | odbijena |
+| Ikonica sa spiska | sačuvana |
+| Zatečena ikonica van spiska pri izmeni | prihvaćena |
+| `validan_email()` | 7 ispravnih prolazi, 13 neispravnih pada |
+
+Kontrast je meren, a ne procenjivan: 1.08:1 pre ispravke `.kvota.izabrana:hover`,
+13.92:1 posle. Isto i za razmak tonova u kružnom grafikonu (ΔE u OKLab
+prostoru), zbog čega je jedan ton i zamenjen.

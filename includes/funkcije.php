@@ -40,6 +40,17 @@ function formatiraj_datum_vreme(string $datum_vreme): string
     return date('d.m.Y. H:i', strtotime($datum_vreme));
 }
 
+// Sastavlja ime i prezime za prikaz. Operater i administrator ih ne moraju
+// imati upisane (vidi ime_obavezno_za_ulogu u includes/validacija.php), pa se
+// tada koristi korisničko ime - da red u tabeli ne ostane prazan i da se nalog
+// i dalje može prepoznati.
+function ime_za_prikaz(?string $ime, ?string $prezime, ?string $korisnicko_ime): string
+{
+    $puno_ime = trim(trim($ime ?? '') . ' ' . trim($prezime ?? ''));
+
+    return $puno_ime !== '' ? $puno_ime : trim($korisnicko_ime ?? '');
+}
+
 // Generiše CSRF token (ako već ne postoji u sesiji) i vraća njegovu vrednost
 // da bi se upisala u skriveno polje forme. Zahteva da je sesija već pokrenuta.
 function generisi_csrf_token(): string

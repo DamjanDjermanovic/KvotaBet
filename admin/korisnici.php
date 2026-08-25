@@ -15,6 +15,18 @@ $pdo = konektuj_bazu();
 $moj_id = (int) $_SESSION['korisnik_id'];
 $statusi = ['aktivan', 'blokiran', 'na_cekanju'];
 
+// Uloge se čitaju pre obrade forme, a ne tek pred ispis: obrada mora da zna
+// naziv izabrane uloge da bi znala da li su ime i prezime obavezni.
+try {
+    $uloge = $pdo->query('SELECT id, naziv FROM uloga ORDER BY id')->fetchAll();
+} catch (PDOException $e) {
+    upisi_gresku('Greška pri učitavanju uloga: ' . $e->getMessage());
+    $uloge = [];
+}
+
+// Naziv uloge po njenom id-ju, da se u obradi ne pretražuje niz svaki put
+$nazivi_uloga = array_column($uloge, 'naziv', 'id');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_token_ispravan($_POST['csrf_token'] ?? null)) {
         postavi_poruku('danger', 'Nevažeća sesija. Osvežite stranicu i pokušajte ponovo.');
@@ -34,8 +46,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status = $_POST['status'] ?? 'aktivan';
         $lozinka = $_POST['lozinka'] ?? '';
 
-        if (!validno_ime($ime) || !validno_ime($prezime)) {
-            postavi_poruku('danger', 'Ime i prezime moraju imati 2-50 slova.');
+        // Ime i prezime su obavezni samo za igrača; operateru i administratoru
+        // smeju ostati prazni, ali ako su uneti, moraju biti ispravni.
+        $ime_je_obavezno = ime_obavezno_za_ulogu($nazivi_uloga[$uloga_id] ?? null);
+
+        $ime_ispravno = ime_zadovoljava($ime, $ime_je_obavezno)
+            && ime_zadovoljava($prezime, $ime_je_obavezno);
+
+        if (!$ime_ispravno) {
+            postavi_poruku('danger', $ime_je_obavezno
+                ? 'Ime i prezime moraju imati 2-50 slova.'
+                : 'Ako unosite ime ili prezime, moraju imati 2-50 slova.');
         } elseif (!validno_korisnicko_ime($korisnicko_ime)) {
             postavi_poruku('danger', 'Korisničko ime: 3-30 znakova, slova, cifre i donja crta.');
         } elseif (!validan_email($email)) {
@@ -141,8 +162,6 @@ $korisnik_za_izmenu = null;
 $izmeni_id = isset($_GET['izmeni']) && ctype_digit($_GET['izmeni']) ? (int) $_GET['izmeni'] : null;
 
 try {
-    $uloge = $pdo->query('SELECT id, naziv FROM uloga ORDER BY id')->fetchAll();
-
     if ($izmeni_id !== null) {
         $upit = $pdo->prepare('SELECT * FROM korisnik WHERE id = ?');
         $upit->execute([$izmeni_id]);
@@ -156,7 +175,6 @@ try {
     )->fetchAll();
 } catch (PDOException $e) {
     upisi_gresku('Greška pri učitavanju korisnika: ' . $e->getMessage());
-    $uloge = [];
     $korisnici = [];
 }
 
@@ -177,7 +195,19 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
         <div class="card shadow-sm">
             <div class="card-body">
                 <h2 class="mb-3"><?= $korisnik_za_izmenu ? 'Izmena korisnika' : 'Novi korisnik' ?></h2>
-                <form method="post" id="forma-korisnik">
+                <?php
+                // Admin ovom formom otvara tuđe naloge, pa mu pregledač ne sme
+                // nuditi sopstvene upamćene podatke - autocomplete="off" na
+                // formi, a na polju za lozinku "new-password", jer pregledači
+                // za lozinke po pravilu ne poštuju "off".
+                //
+                // Da li su ime i prezime obavezni zavisi od izabrane uloge.
+                // Prvi ispis ide po zatečenoj ulozi, a js/korisnici.js to menja
+                // pri promeni izbora; server proverava isto pravilo ponovo.
+                $uloga_na_formi = $nazivi_uloga[$korisnik_za_izmenu['uloga_id'] ?? 0] ?? reset($nazivi_uloga);
+                $ime_obavezno_na_formi = ime_obavezno_za_ulogu($uloga_na_formi ?: null);
+                ?>
+                <form method="post" id="forma-korisnik" autocomplete="off">
                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
                     <input type="hidden" name="akcija" value="sacuvaj">
                     <?php if ($korisnik_za_izmenu): ?>
@@ -187,13 +217,19 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
 
                     <div class="row">
                         <div class="col-6 mb-2">
-                            <label for="ime" class="form-label">Ime</label>
-                            <input type="text" class="form-control" id="ime" name="ime" required minlength="2" maxlength="50"
+                            <label for="ime" class="form-label">
+                                Ime <span class="text-muted oznaka-neobavezno" <?= $ime_obavezno_na_formi ? 'hidden' : '' ?>>(opciono)</span>
+                            </label>
+                            <input type="text" class="form-control" id="ime" name="ime" minlength="2" maxlength="50"
+                                   autocomplete="off" <?= $ime_obavezno_na_formi ? 'required' : '' ?>
                                    value="<?= bezbedno($korisnik_za_izmenu['ime'] ?? '') ?>">
                         </div>
                         <div class="col-6 mb-2">
-                            <label for="prezime" class="form-label">Prezime</label>
-                            <input type="text" class="form-control" id="prezime" name="prezime" required minlength="2" maxlength="50"
+                            <label for="prezime" class="form-label">
+                                Prezime <span class="text-muted oznaka-neobavezno" <?= $ime_obavezno_na_formi ? 'hidden' : '' ?>>(opciono)</span>
+                            </label>
+                            <input type="text" class="form-control" id="prezime" name="prezime" minlength="2" maxlength="50"
+                                   autocomplete="off" <?= $ime_obavezno_na_formi ? 'required' : '' ?>
                                    value="<?= bezbedno($korisnik_za_izmenu['prezime'] ?? '') ?>">
                         </div>
                     </div>
@@ -222,7 +258,9 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                             <select class="form-select" id="uloga_id" name="uloga_id" required
                                 <?= ($korisnik_za_izmenu && (int) $korisnik_za_izmenu['id'] === $moj_id) ? 'disabled' : '' ?>>
                                 <?php foreach ($uloge as $uloga): ?>
+                                    <?php // data-trazi-ime govori skripti da li ta uloga traži ime i prezime ?>
                                     <option value="<?= (int) $uloga['id'] ?>"
+                                        data-trazi-ime="<?= ime_obavezno_za_ulogu($uloga['naziv']) ? '1' : '0' ?>"
                                         <?= isset($korisnik_za_izmenu['uloga_id']) && (int) $korisnik_za_izmenu['uloga_id'] === (int) $uloga['id'] ? 'selected' : '' ?>>
                                         <?= bezbedno($uloga['naziv']) ?>
                                     </option>
@@ -247,6 +285,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         </label>
                         <input type="password" class="form-control" id="lozinka" name="lozinka" minlength="6"
                                pattern="(?=.*[A-Za-z])(?=.*[0-9]).{6,}" title="Bar 6 znakova, jedno slovo i jedna cifra"
+                               autocomplete="new-password"
                                <?= $korisnik_za_izmenu ? '' : 'required' ?>>
                     </div>
 
@@ -275,8 +314,13 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                     <?php foreach ($korisnici as $korisnik): ?>
                         <tr>
                             <td>
-                                <div><?= bezbedno($korisnik['ime']) ?> <?= bezbedno($korisnik['prezime']) ?></div>
+                                <?php // Operater i admin ne moraju imati ime - tada u prvom redu stoji korisničko ime ?>
+                                <div><?= bezbedno(ime_za_prikaz($korisnik['ime'], $korisnik['prezime'], $korisnik['korisnicko_ime'])) ?></div>
                                 <div class="text-muted small"><?= bezbedno($korisnik['korisnicko_ime']) ?> · <?= bezbedno($korisnik['email']) ?></div>
+                                <?php // Oznaka sopstvenog naloga stoji uz ime, a ne među dugmadima, jer govori ko je korisnik, a ne šta se sa njim može ?>
+                                <?php if ((int) $korisnik['id'] === $moj_id): ?>
+                                    <span class="status status-ja mt-1">to ste vi</span>
+                                <?php endif; ?>
                             </td>
                             <td><?= bezbedno($korisnik['uloga_naziv']) ?></td>
                             <td><span class="status status-<?= bezbedno($korisnik['status']) ?>"><?= bezbedno($korisnik['status']) ?></span></td>
@@ -306,8 +350,6 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                                         <input type="hidden" name="id" value="<?= (int) $korisnik['id'] ?>">
                                         <button type="submit" class="btn btn-sm btn-outline-danger">Obriši</button>
                                     </form>
-                                <?php else: ?>
-                                    <span class="status">to ste vi</span>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -329,4 +371,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../includes/podnozje.php'; ?>
+<?php
+$dodatne_skripte = ['korisnici.js', 'lozinka.js'];
+require_once __DIR__ . '/../includes/podnozje.php';
+?>

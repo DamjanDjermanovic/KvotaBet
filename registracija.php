@@ -128,6 +128,31 @@ $max_datum_rodjenja = date('Y-m-d', strtotime('-' . MIN_GODINA_ZA_REGISTRACIJU .
                         <div class="alert alert-danger"><?= bezbedno($greske['opsta']) ?></div>
                     <?php endif; ?>
 
+                    <?php
+                    // Uslov punoletstva se već proverava i na klijentu i na serveru
+                    // (max na polju za datum rođenja i validan_datum_rodjenja), ali
+                    // je to provera koju korisnik vidi tek kad pogreši. Ovde piše
+                    // unapred, pre forme, da se zna na čemu je pre nego što počne
+                    // da kuca. Uz to i podsetnik da je reč o simulaciji - napomena
+                    // u podnožju ne stoji na ovoj stranici, jer ona ima sopstveni
+                    // HTML, bez zajedničkog zaglavlja i podnožja.
+                    ?>
+                    <div class="alert alert-info" role="note">
+                        <div class="d-flex gap-2">
+                            <i class="bi bi-info-circle-fill mt-1" aria-hidden="true"></i>
+                            <div>
+                                <strong>Usluga je namenjena punoletnim licima.</strong>
+                                Nalog može otvoriti samo osoba starija od
+                                <?= (int) MIN_GODINA_ZA_REGISTRACIJU ?> godina.
+                                <div class="mt-1">
+                                    Reč je o <strong>simulaciji sa virtuelnim novcem</strong> —
+                                    nema pravih uplata, platnih kartica ni povezivanja sa
+                                    spoljnim servisima.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <form method="post" novalidate id="forma-registracija">
                         <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
 
@@ -202,15 +227,13 @@ $max_datum_rodjenja = date('Y-m-d', strtotime('-' . MIN_GODINA_ZA_REGISTRACIJU .
                     <p class="text-center mt-3 mb-0">
                         Već imate nalog? <a href="<?= KORENSKI_URL ?>/prijava.php">Prijavite se</a>
                     </p>
-                    <p class="text-center text-muted small mt-3 mb-0">
-                        Simulacija sa virtuelnim novcem — registracija je dozvoljena od
-                        <?= MIN_GODINA_ZA_REGISTRACIJU ?> godina.
-                    </p>
+                    <?php // Ranija sitna napomena o punoletstvu i virtuelnom novcu je bila ovde, ispod forme; sada stoji istaknuto iznad nje, pa se ne ponavlja ?>
                 </div>
             </div>
         </div>
     </div>
 </div>
 <script src="<?= KORENSKI_URL ?>/js/validacija.js"></script>
+<script src="<?= KORENSKI_URL ?>/js/lozinka.js"></script>
 </body>
 </html>

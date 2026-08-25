@@ -43,4 +43,22 @@
             filtrirajPoLigi(poljeDomacin, poljeGost);
         }
     }
+
+    // Na formi za sport: pregled izabrane ikonice. U padajućem meniju stoji
+    // opis ("Meta — pikado, streljaštvo"), a ne izgled, pa se izabrana ikonica
+    // odmah prikazuje pored menija. Prvi prikaz ispisuje PHP, ovde se samo
+    // menja pri svakom novom izboru.
+    var poljeIkonice = document.getElementById('ikonica');
+
+    if (poljeIkonice && poljeIkonice.dataset.pregled) {
+        var pregled = document.getElementById(poljeIkonice.dataset.pregled);
+
+        if (pregled) {
+            poljeIkonice.addEventListener('change', function () {
+                // Crtica se prikazuje kad ikonica nije izabrana, da mesto za
+                // pregled ne ostane prazno i ne "skače" pri izboru
+                pregled.querySelector('i').className = 'bi ' + (poljeIkonice.value || 'bi-dash');
+            });
+        }
+    }
 })();
