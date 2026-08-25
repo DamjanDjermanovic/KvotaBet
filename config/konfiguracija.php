@@ -39,3 +39,18 @@ define('DOZVOLJENE_EKSTENZIJE', ['jpg', 'jpeg', 'png', 'pdf']);
 // --- Tekstualni log fajlovi ---
 define('PUTANJA_LOG_PRISTUP', KORENSKA_PUTANJA . '/logovi/pristup.log');
 define('PUTANJA_LOG_GRESKE', KORENSKA_PUTANJA . '/logovi/greske.log');
+
+// --- Režim rada ---
+// U razvojnom režimu greške se ispisuju na ekran radi lakšeg traženja uzroka.
+// Za predaju i svaki stvarni rad mora ostati false: korisniku se nikad ne sme
+// prikazati sirova PHP greška, jer odaje putanje na disku, imena tabela i
+// strukturu koda. Greške tada idu isključivo u logovi/greske.log.
+define('RAZVOJNI_REZIM', false);
+
+// Ova podešavanja se namerno rade u PHP-u, a ne u .htaccess: php_flag radi
+// samo uz mod_php, dok ini_set važi u svakom okruženju (mod_php, PHP-FPM, CLI).
+ini_set('display_errors', RAZVOJNI_REZIM ? '1' : '0');
+ini_set('display_startup_errors', RAZVOJNI_REZIM ? '1' : '0');
+ini_set('log_errors', '1');
+ini_set('error_log', PUTANJA_LOG_GRESKE);
+error_reporting(E_ALL);

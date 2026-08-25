@@ -47,12 +47,16 @@ evidentiraj_pristup_u_bazi(konektuj_bazu(), $_SESSION['korisnik_id'] ?? null, $_
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/sportovi.php">Sportovi</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/lige.php">Lige</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/timovi.php">Timovi</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/tipovi_igre.php">Tipovi igre</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/dogadjaji.php">Događaji i kvote</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/rezultati.php">Rezultati</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/dokumenta.php">Dokumenta</a></li>
                 <?php elseif (trenutna_uloga() === 'admin'): ?>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/korisnici.php">Korisnici</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/uloge.php">Uloge</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/dokumenta.php">Dokumenta</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/tiketi.php">Tiketi</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/transakcije.php">Transakcije</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/dokumenta.php">Dokumenti</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/logovi.php">Logovi</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/statistika.php">Statistika</a></li>
                 <?php endif; ?>

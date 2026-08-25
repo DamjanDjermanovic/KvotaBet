@@ -1,0 +1,21 @@
+# Podešavanja Apache-a za aplikaciju kladionice.
+
+# Sopstvene stranice za greške umesto Apache-ovih podrazumevanih.
+# Bez upitnika u putanji: Apache tada popunjava REDIRECT_STATUS, iz kog
+# greska.php čita kod. Query string se u ErrorDocument direktivi ne prenosi
+# pouzdano kroz sve verzije, pa se na njega namerno ne oslanjamo.
+ErrorDocument 403 /kladionica/greska.php
+ErrorDocument 404 /kladionica/greska.php
+ErrorDocument 500 /kladionica/greska.php
+
+# Bez izlistavanja sadržaja foldera koji nemaju index stranicu
+Options -Indexes
+
+# display_errors se NE gasi ovde nego u config/konfiguracija.php preko
+# ini_set(). php_flag radi samo uz mod_php i oborio bi server greškom 500 na
+# okruženjima gde tog modula nema (PHP-FPM), dok ini_set radi svuda.
+
+# Direktan pristup fajlovima koji nisu namenjeni pregledu u pregledaču
+<FilesMatch "\.(sql|log|md)$">
+    Require all denied
+</FilesMatch>

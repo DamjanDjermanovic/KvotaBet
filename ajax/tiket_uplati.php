@@ -20,6 +20,28 @@ $ulog_unos = $_POST['ulog'] ?? null;
 try {
     $pdo->beginTransaction();
 
+    // Prvo se zaključavaju događaji sa tiketa, pa tek onda korisnik. Isti
+    // redosled poštuje i obrada rezultata (includes/rezultati.php): događaj pa
+    // korisnik. Da svaka strana zaključava svojim redom, uplata i obrada istog
+    // događaja mogle bi da se međusobno blokiraju.
+    //
+    // Zaključavanje događaja usput zatvara i trku: ako se baš u tom trenutku
+    // obrađuje rezultat, uplata sačeka i tek onda pročita novi status događaja,
+    // pa stavka za već zaključen događaj ne može da se provuče na tiket.
+    $kvote_u_sesiji = tiket_kvote();
+
+    if (!empty($kvote_u_sesiji)) {
+        $mesta = implode(',', array_fill(0, count($kvote_u_sesiji), '?'));
+        $zakljucaj = $pdo->prepare(
+            "SELECT d.id FROM dogadjaj d
+             JOIN kvota k ON k.dogadjaj_id = d.id
+             WHERE k.id IN ($mesta)
+             ORDER BY d.id
+             FOR UPDATE"
+        );
+        $zakljucaj->execute($kvote_u_sesiji);
+    }
+
     // Red korisnika se zaključava (FOR UPDATE) dok traje transakcija. Bez toga
     // bi dva istovremena zahteva mogla oba da prođu proveru stanja i zajedno
     // skinu više nego što na računu zaista ima.

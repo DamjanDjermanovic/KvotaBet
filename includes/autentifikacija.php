@@ -4,6 +4,7 @@
 // koja zna za prijavljenog korisnika ili koja zahteva određenu ulogu.
 
 require_once __DIR__ . '/../config/konfiguracija.php';
+require_once __DIR__ . '/../includes/greske.php';
 require_once __DIR__ . '/../config/baza.php';
 require_once __DIR__ . '/../includes/log.php';
 require_once __DIR__ . '/../includes/funkcije.php';

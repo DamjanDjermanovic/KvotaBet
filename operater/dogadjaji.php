@@ -3,9 +3,11 @@
 // lige zajedničke oba izabrana tima, čime je nemoguće napraviti utakmicu
 // između timova iz dve različite lige.
 //
-// Unos rezultata i automatsko rešavanje tiketa je faza 8 i ovde se namerno
-// ne dira - status se može ručno postaviti (npr. na "otkazan"), ali polja za
-// golove nisu deo ove forme.
+// Statusi "zavrsen" i "otkazan" se NE mogu postaviti odavde. Njih postavlja
+// isključivo operater/rezultati.php, koji uz promenu statusa u istoj transakciji
+// baze oceni stavke i isplati dobitke. Kad bi se status menjao i ovde, događaj
+// bi mogao da završi kao obrađen a da tiketi zauvek ostanu "aktivan".
+// Iz istog razloga se već obrađen događaj uopšte ne može menjati.
 
 require_once __DIR__ . '/../includes/autentifikacija.php';
 require_once __DIR__ . '/../includes/funkcije.php';
@@ -13,7 +15,8 @@ require_once __DIR__ . '/../includes/funkcije.php';
 zahtevaj_ulogu('operater', 'admin');
 
 $pdo = konektuj_bazu();
-$dozvoljeni_statusi = ['najavljen', 'u_toku', 'zavrsen', 'otkazan'];
+$dozvoljeni_statusi = ['najavljen', 'u_toku'];
+$obradjeni_statusi = ['zavrsen', 'otkazan'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_token_ispravan($_POST['csrf_token'] ?? null)) {
@@ -37,9 +40,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($vreme_pocetka === '' || strtotime($vreme_pocetka) === false) {
             postavi_poruku('danger', 'Unesite ispravno vreme početka.');
         } elseif (!in_array($status, $dozvoljeni_statusi, true)) {
-            postavi_poruku('danger', 'Neispravan status.');
+            postavi_poruku('danger', 'Status se ovde može postaviti samo na "najavljen" ili "u_toku". Za zaključivanje i otkazivanje koristite stranicu Rezultati.');
         } else {
             try {
+                // Već obrađen događaj se ne dira: tiketi su rešeni po njegovom
+                // rezultatu, pa bi izmena timova, vremena ili statusa učinila
+                // te tikete neobjašnjivim
+                if ($id !== null) {
+                    $provera = $pdo->prepare('SELECT status FROM dogadjaj WHERE id = ?');
+                    $provera->execute([$id]);
+                    $postojeci_status = (string) $provera->fetchColumn();
+
+                    if (in_array($postojeci_status, $obradjeni_statusi, true)) {
+                        throw new RuntimeException('Događaj je već obrađen i više se ne može menjati.');
+                    }
+                }
+
                 // Liga se izvodi iz timova, ne unosi se ručno - sprečava
                 // nedoslednost tipa "domaćin iz fudbala, gost iz košarke"
                 $upitTimova = $pdo->prepare('SELECT id, liga_id FROM tim WHERE id IN (?, ?)');
@@ -68,8 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             } catch (PDOException $e) {
+                // PDOException se hvata pre RuntimeException jer je njegov naslednik
                 upisi_gresku('Greška pri čuvanju događaja: ' . $e->getMessage());
                 postavi_poruku('danger', 'Trenutno nije moguće sačuvati događaj.');
+            } catch (RuntimeException $e) {
+                postavi_poruku('danger', $e->getMessage());
             }
         }
     } elseif ($akcija === 'obrisi' && ctype_digit((string) ($_POST['id'] ?? ''))) {
@@ -198,6 +217,11 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <div class="form-text">
+                            Zaključivanje i otkazivanje se rade na stranici
+                            <a href="<?= KORENSKI_URL ?>/operater/rezultati.php">Rezultati</a>, jer uz status
+                            treba obraditi i tikete.
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100"><?= $dogadjaj_za_izmenu ? 'Sačuvaj izmene' : 'Dodaj događaj' ?></button>
@@ -224,21 +248,34 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                 </thead>
                 <tbody>
                     <?php foreach ($dogadjaji as $dogadjaj): ?>
+                        <?php $obradjen = in_array($dogadjaj['status'], $obradjeni_statusi, true); ?>
                         <tr>
                             <td><?= bezbedno($dogadjaj['domacin_naziv']) ?> — <?= bezbedno($dogadjaj['gost_naziv']) ?></td>
                             <td><?= bezbedno($dogadjaj['sport_naziv']) ?> / <?= bezbedno($dogadjaj['liga_naziv']) ?></td>
                             <td><?= bezbedno(formatiraj_datum_vreme($dogadjaj['vreme_pocetka'])) ?></td>
-                            <td><span class="badge text-bg-<?= boja_statusa_dogadjaja($dogadjaj['status']) ?>"><?= bezbedno($dogadjaj['status']) ?></span></td>
+                            <td>
+                                <span class="badge text-bg-<?= boja_statusa_dogadjaja($dogadjaj['status']) ?>"><?= bezbedno($dogadjaj['status']) ?></span>
+                                <?php if ($dogadjaj['status'] === 'zavrsen' && $dogadjaj['golova_domacin'] !== null): ?>
+                                    <div class="small mt-1"><?= (int) $dogadjaj['golova_domacin'] ?> : <?= (int) $dogadjaj['golova_gost'] ?></div>
+                                <?php endif; ?>
+                            </td>
                             <td><?= (int) $dogadjaj['broj_kvota'] ?></td>
                             <td class="text-end">
                                 <a href="<?= KORENSKI_URL ?>/operater/kvote.php?dogadjaj_id=<?= (int) $dogadjaj['id'] ?>" class="btn btn-sm btn-outline-secondary">Kvote</a>
-                                <a href="<?= KORENSKI_URL ?>/operater/dogadjaji.php?izmeni=<?= (int) $dogadjaj['id'] ?>" class="btn btn-sm btn-outline-primary">Izmeni</a>
-                                <form method="post" class="d-inline" onsubmit="return confirm('Obrisati ovaj događaj?');">
-                                    <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
-                                    <input type="hidden" name="akcija" value="obrisi">
-                                    <input type="hidden" name="id" value="<?= (int) $dogadjaj['id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Obriši</button>
-                                </form>
+
+                                <?php if ($obradjen): ?>
+                                    <?php // Obrađen događaj se ne menja i ne briše - tiketi su rešeni po njemu ?>
+                                    <span class="badge text-bg-light text-dark">obrađen</span>
+                                <?php else: ?>
+                                    <a href="<?= KORENSKI_URL ?>/operater/dogadjaji.php?izmeni=<?= (int) $dogadjaj['id'] ?>" class="btn btn-sm btn-outline-primary">Izmeni</a>
+                                    <a href="<?= KORENSKI_URL ?>/operater/rezultati.php" class="btn btn-sm btn-outline-success">Rezultat</a>
+                                    <form method="post" class="d-inline" onsubmit="return confirm('Obrisati ovaj događaj?');">
+                                        <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
+                                        <input type="hidden" name="akcija" value="obrisi">
+                                        <input type="hidden" name="id" value="<?= (int) $dogadjaj['id'] ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Obriši</button>
+                                    </form>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

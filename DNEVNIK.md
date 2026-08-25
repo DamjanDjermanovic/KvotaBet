@@ -78,6 +78,78 @@ verifikacioni dokument.
 
 ---
 
+## Faza 8 — Obrada rezultata i rešavanje tiketa (2026-08-25)
+
+Dodato:
+- `includes/rezultati.php` — jezgro faze:
+  - `tip_igre_pogodjen()` ocenjuje oznake `1, X, 2, 1X, 12, X2, GG, 0-2, 3+`.
+    Za nepoznatu oznaku vraća `null`, a ne `false` — obrada se tada prekida
+    umesto da se stavka tiho proglasi promašenom i nepravedno obori tikete.
+  - `resi_tiket()` preračunava status tiketa po pravilu 7.
+  - `isplati_na_racun()` uvećava stanje i obavezno upisuje zapis u
+    `transakcija` (pravilo 8).
+  - `obradi_dogadjaj()` radi sve u jednoj transakciji baze (pravilo 9).
+- `operater/rezultati.php` — unos rezultata i otkazivanje događaja, sa
+  spiskom onoga što čeka obradu i onoga što je obrađeno.
+- `baza/test_rezultati.sql` — šest tiketa u poznatom stanju sa tabelom
+  očekivanih ishoda u komentaru. **Skripta briše sve postojeće tikete i
+  transakcije** da bi početno stanje bilo tačno poznato.
+
+### Idempotentnost — tri odvojene brane
+1. `SELECT ... FROM dogadjaj WHERE id = ? FOR UPDATE` na početku transakcije.
+   Istovremeni zahtevi se serijalizuju; drugi po redu pročita status tek kad
+   prvi commit-uje i vidi da je događaj već obrađen.
+2. Već obrađen događaj (`zavrsen`/`otkazan`) se odbija sa jasnom porukom.
+3. `resi_tiket()` zaključava tiket i preskače sve što nije `aktivan`, pa
+   tiket koji je jednom rešen ne može biti isplaćen drugi put.
+
+Uz to, stranica posle obrade uvek preusmerava (POST-redirect-GET), pa
+osvežavanje ne šalje formu ponovo.
+
+### Odluke koje vredi zapamtiti
+- **Stornirana stavka ulazi u proračun kao kvota 1.00**, a ne kao automatski
+  povraćaj celog tiketa. Tiket sa jednim pogođenim i jednim storniranim parom
+  je dobitan po umanjenoj kvoti (vidi T-TEST-05: originalno 3.41, stvarno
+  isplaćeno po 1.75). Ulog se u celosti vraća samo kad su **sve** stavke
+  stornirane. Da je otkazan događaj automatski vraćao ulog, tiket koji je već
+  promašio na drugom događaju dobio bi novac nazad.
+- `tiket.ukupna_kvota` ostaje istorijski zapis dogovorenog pri uplati;
+  stvarno isplaćeni iznos ide u `tiket.isplaceno`.
+- Ispravka pogrešno unetog rezultata **nije** podržana. Vraćanje već
+  isplaćenih dobitaka je zaseban problem i namerno nije rešavan ovde.
+
+### Ispravljeno u ranijim fazama
+`operater/dogadjaji.php` je iz faze 7 dozvoljavao ručno postavljanje statusa
+na `zavrsen` ili `otkazan`. Time je događaj mogao da završi kao obrađen a da
+tiketi zauvek ostanu `aktivan` — i da ih `rezultati.php` posle odbije jer je
+događaj „već obrađen". Sada su tamo dozvoljeni samo `najavljen` i `u_toku`, a
+već obrađen događaj se uopšte ne može menjati ni brisati.
+
+U `ajax/tiket_uplati.php` uvedeno je zaključavanje događaja **pre** korisnika,
+istim redosledom koji koristi i obrada rezultata. Time se zatvara trka u kojoj
+bi se stavka za događaj koji se upravo zaključuje provukla na tiket, a
+istovremeno se izbegava i međusobno blokiranje dve transakcije.
+
+### Testirano
+Ceo scenario iz `test_rezultati.sql` je odigran preko pravog HTTP-a i ishodi
+se poklapaju sa dokumentovanim: 3 dobitna, 2 gubitna, 1 storniran tiket,
+ukupno isplaćeno 1163.00, stanje računa 1000.00 → 2163.00, svaka isplata sa
+svojim zapisom u `transakcija` i ispravnim nizom `stanje_posle`.
+
+Posebno provereno:
+- **5 istovremenih zahteva** za obradu istog događaja → tačno **jedna**
+  isplata, stanje 1175.00 umesto 1875.00 koliko bi bilo bez zaključavanja.
+- Ponovni unos rezultata i pokušaj otkazivanja već završenog događaja →
+  odbijeni, stanje nepromenjeno.
+- Nepoznat tip igre (`HT1`) na stavci → obrada prekinuta i **potpuno**
+  poništena: događaj ostao `najavljen`, bez golova, sve stavke i dalje `ceka`,
+  stanje računa netaknuto.
+- Zaobilaženje preko `dogadjaji.php` (postavljanje `zavrsen`, izmena obrađenog
+  događaja) → odbijeno na serveru.
+- Igračev panel prikazuje rešene tikete, statuse stavki i isplate.
+
+---
+
 ## Faza 9 — Admin panel (2026-08-25)
 
 Dodato:
@@ -115,12 +187,117 @@ testiranja prethodnih faza.
 
 ---
 
-## Napomena — greska.php ne postoji
+## Dopuna CRUD-a do svih 13 tabela (2026-08-25)
+
+Zahtev 6 iz CLAUDE.md traži kreiranje, čitanje, izmenu i brisanje **kroz
+interfejs** nad svakom tabelom. Nedostajalo je za `tip_igre`, `tiket`,
+`tiket_stavka`, `transakcija`, `dokument` i `pristup_log`.
+
+Dodato:
+- `operater/tipovi_igre.php` — CRUD nad `tip_igre`. Oznaka nije samo natpis:
+  po njoj `tip_igre_pogodjen()` ocenjuje stavke, pa stranica prikazuje spisak
+  oznaka koje sistem ume da oceni i upozorava kad se unese nepoznata ili kad
+  se postojeća promeni.
+- `admin/tiketi.php` — pregled svih tiketa, izmena statusa tiketa i statusa
+  pojedinačne stavke, brisanje tiketa (stavke odlaze kaskadno) i brisanje
+  pojedinačne stavke.
+- `admin/transakcije.php` — pregled, ručni unos korektivne transakcije,
+  izmena opisa, brisanje, plus stalna kontrola usklađenosti svih računa.
+- `admin/dokumenta.php` — brisanje dokumenta koje uklanja i fajl sa diska.
+- `admin/logovi.php` — dopunjen radom nad tabelom `pristup_log`: pregled,
+  izmena (ispravka/anonimizacija zapisa), brisanje pojedinačnog zapisa i
+  čišćenje svih starijih od N dana.
+- `includes/racun.php` — `ocekivano_stanje_racuna()`, `preracunaj_stanje_racuna()`
+  i `nesaglasni_racuni()`.
+- `includes/log.php` — `upisi_trag()`: svaka destruktivna akcija upisuje red
+  `TRAG | ip | ko | šta` u `logovi/greske.log`. Obrisani red iz baze nema ko
+  da posvedoči o sebi, pa trag mora ostati van nje.
+
+### Kako je čuvana usklađenost stanja računa
+Polazna provera: ako se sve transakcije igrača odigraju redom počev od nule,
+mora se dobiti tačno ono što piše u `korisnik.stanje_racuna`. Odatle:
+
+- **Brisanje tiketa ne dira novac.** `transakcija.tiket_id` je
+  `ON DELETE SET NULL`, pa zapisi o ulogu i dobitku ostaju u evidenciji i samo
+  gube vezu sa tiketom. Stanje se ne menja, pa ne može ni da se raziđe.
+  Posle brisanja se svejedno proverava jednakost i, ako ne bi važila, ceo
+  posao se poništava.
+- **Brisanje transakcije vezane za tiket se odbija uz objašnjenje** — ostao bi
+  tiket bez traga o novcu. Ispravan put je brisanje celog tiketa.
+- **Brisanje samostalne transakcije** preračunava ceo niz (i kolonu
+  `stanje_posle` u preostalim redovima) pa upisuje novo stanje. Ako bi u nekom
+  trenutku stanje otišlo ispod nule, brisanje se odbija.
+- **Brisanje stavke** je dozvoljeno samo dok je tiket `aktivan`; kod obrađenog
+  tiketa je po tim stavkama već obračunata isplata. Poslednja stavka se ne
+  briše (pravilo 1), a posle brisanja se ukupna kvota i potencijalni dobitak
+  preračunavaju iz preostalih stavki.
+- **Iznos i tip transakcije se ne mogu menjati** — oni određuju stanje računa.
+  Menja se samo opis; za ispravku iznosa postoji brisanje pa nova korekcija.
+
+### Šta je usput otkriveno
+Nova kontrola usklađenosti odmah je prijavila stvarnu grešku u
+`baza/test_rezultati.sql` iz faze 8: skripta briše **sve** transakcije, ali je
+stanje računa postavljala samo fixture igraču, pa je `testigrac` ostajao sa
+1400.00 koje nijedan zapis ne objašnjava. Ispravljeno dodavanjem
+`UPDATE korisnik SET stanje_racuna = 0.00` posle brisanja transakcija.
+
+### Testirano
+Preko pravog Apache-a: odbijeno brisanje transakcije vezane za tiket, brisanje
+poslednje stavke i brisanje stavke sa obrađenog tiketa; korektivna transakcija
+1000 → 1250 i njeno brisanje nazad na 1000 uz neprekinut niz `stanje_posle`;
+brisanje tiketa uz nepromenjeno stanje i sačuvanu transakciju sa
+`tiket_id = NULL`; brisanje dokumenta uklonilo i fajl sa diska; čišćenje
+`pristup_log` po broju dana i pojedinačno; upozorenja pri unosu i izmeni
+nepoznate oznake tipa igre. Svih devet destruktivnih akcija je zabeleženo kao
+`TRAG` u `greske.log`.
+
+---
+
+## Faza 10 — Obrada grešaka (2026-08-25)
+
+Dodato:
+- `greska.php` — stranica za kodove 403, 404 i 500. Namerno je samostalna: ne
+  uključuje `zaglavlje.php` ni bazu, jer se na nju stiže i kad baza ne radi.
+  Kod čita iz `?kod=` (kad je uputi aplikacija) ili iz `REDIRECT_STATUS` (kad
+  je pozove Apache).
+- `.htaccess` u korenu — `ErrorDocument` za 403/404/500, `Options -Indexes` i
+  zabrana direktnog pristupa `.sql`, `.log` i `.md` fajlovima.
+- `includes/greske.php` — `set_exception_handler`, `set_error_handler` i
+  `register_shutdown_function`. Sve što promakne pojedinačnim `try/catch`
+  blokovima završi ovde: detalji idu u `greske.log`, korisnik dobija
+  `greska.php`. AJAX endpointi definišu `AJAX_ZAHTEV` pre uključivanja, pa im
+  i greška vrati JSON, a ne HTML koji `fetch()` ne ume da pročita.
+- `config/konfiguracija.php` — `RAZVOJNI_REZIM` (podrazumevano `false`) i
+  gašenje `display_errors` preko `ini_set()`. Namerno u PHP-u a ne u
+  `.htaccess`: `php_flag` radi samo uz mod_php i oborio bi server tamo gde tog
+  modula nema, dok `ini_set` radi u svakom okruženju.
+
+`ErrorDocument` je proveren pod **pravim Apache-om** (privremena instanca na
+zasebnom portu), pošto ugrađeni PHP server ignoriše `.htaccess`:
+nepostojeća stranica daje našu 404 stranicu sa HTTP kodom 404, a `.sql`/`.log`/`.md`
+i `uploads/dokumenta/` vraćaju 403 sa našom 403 stranicom.
+
+Provereno i da ništa ne curi: stranica koja baca neuhvaćen izuzetak sa tajnim
+tekstom u poruci, i stranica sa fatalnom greškom — obe daju 302 na
+`greska.php?kod=500`, a u odgovoru nema ni traga od poruke, imena klase, putanje
+na disku ni `SQLSTATE`. Pun tekst je uredno završio u `greske.log`. AJAX verzija
+vraća `500` sa `{"uspeh":false,"poruka":"Došlo je do greške na serveru..."}`.
+Sve stranice sve četiri uloge prošle su kroz proveru na `Fatal error`, `Warning`,
+`Notice`, `Uncaught`, `SQLSTATE` i putanje `/opt/lampp` — nijedna ih ne prikazuje.
+
+Time je zatvorena i praznina zabeležena posle faze 9: `zahtevaj_ulogu()` i
+`operater/dokument_preuzmi.php` sada zaista vode na stranicu sa porukom
+„Zabranjen pristup" umesto na nepostojeću adresu.
+
+---
+
+## ~~Napomena — greska.php ne postoji~~ (REŠENO u fazi 10)
+
+_Zabeleženo posle faze 9, rešeno u fazi 10 — ostavljeno radi istorije._
 
 `zahtevaj_ulogu()` (od faze 3) i `operater/dokument_preuzmi.php` (faza 7)
-preusmeravaju na `greska.php?kod=403` / `kod=404` kad pristup nije dozvoljen,
-ali ta stranica još nije napravljena - to je deo faze 10 (obrada grešaka),
-koja nije bila deo ovog kruga izrade. Do tada takav pokušaj pristupa vodi ka
-nepostojećoj stranici umesto ka lepoj poruci. Provera prava sama po sebi radi
-ispravno (pristup je blokiran), nedostaje samo prijateljska stranica na kraju
-preusmeravanja.
+preusmeravali su na `greska.php?kod=403` / `kod=404` kad pristup nije dozvoljen,
+a ta stranica tada još nije postojala, pa je pokušaj pristupa vodio ka
+nepostojećoj adresi. Provera prava je i tada radila ispravno (pristup je bio
+blokiran), nedostajala je samo stranica na kraju preusmeravanja. Napravljena je
+u fazi 10 i provereno je da oba slučaja sada prikazuju „Zabranjen pristup".

@@ -231,10 +231,5 @@ function jedinstveni_broj_tiketa(PDO $pdo): string
     throw new RuntimeException('Nije moguće generisati broj tiketa. Pokušajte ponovo.');
 }
 
-// Priprema novčani iznos ili kvotu za upis u DECIMAL kolonu: uvek dve decimale,
-// tačka kao separator i bez razdvajanja hiljada. Sprečava da PHP veliki float
-// pretvori u zapis sa eksponentom, koji baza ne bi ispravno pročitala.
-function za_bazu(float $iznos): string
-{
-    return number_format($iznos, 2, '.', '');
-}
+// Napomena: za_bazu() je premeštena u includes/funkcije.php, jer je od faze 8
+// treba i modul za obradu rezultata, koji ne sme da zavisi od sesije.
