@@ -61,4 +61,26 @@
             });
         }
     }
+
+    // Na formi za kvote: dugme "Dodaj sve tipove" ne šalje ništa serveru - samo
+    // otkriva formu ispod, već popunjenu predloženim vrednostima za sve tipove
+    // igre koji događaju nedostaju. Ništa se ne upisuje dok operater sam ne
+    // pritisne "Sačuvaj predložene kvote" te (skrivene, ali postojeće) forme.
+    var dugmeDodajSve = document.getElementById('dugme-dodaj-sve-tipove');
+
+    if (dugmeDodajSve) {
+        var predlogForma = document.getElementById(dugmeDodajSve.dataset.cilj);
+
+        if (predlogForma) {
+            dugmeDodajSve.addEventListener('click', function () {
+                var otvoren = !predlogForma.classList.toggle('d-none');
+
+                dugmeDodajSve.setAttribute('aria-expanded', otvoren ? 'true' : 'false');
+
+                if (otvoren) {
+                    predlogForma.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+        }
+    }
 })();

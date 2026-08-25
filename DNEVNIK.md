@@ -679,3 +679,144 @@ sportovima i korisnicima — u bazi su ostala samo zatečena 4 naloga):
 Kontrast je meren, a ne procenjivan: 1.08:1 pre ispravke `.kvota.izabrana:hover`,
 13.92:1 posle. Isto i za razmak tonova u kružnom grafikonu (ΔE u OKLab
 prostoru), zbog čega je jedan ton i zamenjen.
+
+---
+
+## Svih devet tipova igre za fudbal (2026-08-25)
+
+Ponuda je do sada prikazivala samo 1/X/2 iako `tip_igre` u `schema.sql` ima
+devet fudbalskih oznaka (1, X, 2, 1X, 12, X2, GG, 0-2, 3+) — razlog je bio prost:
+`test_podaci.sql` je unosio kvotu samo za prve tri, pa ostalih šest nikad nije
+imalo šta da se prikaže.
+
+### 1. Dugme „Dodaj sve tipove" (`operater/kvote.php`)
+
+Dodavanje devet kvota jednu po jednu kroz postojeću formu je bilo dovoljno
+sporo da se u praksi preskoči. Novo dugme rešava to za ceo događaj odjednom,
+u dva koraka koja odgovaraju frazi iz zahteva — „napravi kvote sa predloženim
+vrednostima koje operater može da izmeni **pre** čuvanja":
+
+1. Klik na „Dodaj sve tipove" **ne šalje ništa serveru** — samo otkriva formu
+   koja je već u HTML-u, sakrivena (`d-none`), sa po jednim redom za svaki
+   tip igre koji događaju nedostaje. Svaki red ima checkbox (uključen po
+   default-u), naziv tipa i polje sa predloženom vrednošću. Otkrivanje radi
+   `js/operater.js` (dodato uz postojeću logiku filtriranja timova i pregleda
+   ikonice na istoj stranici).
+2. Operater po želji menja vrednosti ili isključuje pojedine redove, pa
+   pritiska „Sačuvaj predložene kvote" — tek to šalje POST (`akcija=dodaj_sve`)
+   koji upisuje izabrane kvote u jednoj transakciji baze.
+
+Predložene vrednosti dolaze iz `predlozena_kvota_za_oznaku()` — mapa oznaka
+u tipičnu kvotu (npr. `'1X' => 1.30`), samo početna tačka za operatera, ne
+poslovno pravilo.
+
+**Server ne veruje formi.** Poslati `tip_igre_id` se preseca sa ponovo
+učitanim spiskom tipova koji zaista nedostaju tom događaju (odbrana od toga
+da je stranica u međuvremenu otvorena u drugom prozoru, ili da je neko poslao
+tip igre iz drugog sporta) — nepripadajući id se tiho preskače. Ako je bilo
+koja poslata vrednost manja od 1.01, **ništa se ne upisuje** — provera ide pre
+prve `INSERT` naredbe, cela grupa je „sve ili ništa" (dodatno umotana u
+`beginTransaction`/`commit`/`rollBack`, iako pravilo 9 iz uputstva govori o
+tiketima, a ne o kvotama — ovde je primenjeno kao dobra praksa za bilo koji
+upis od više redova odjednom).
+
+Testirano preko pravog HTTP-a, kroz privremeni operaterski nalog i događaj
+bez ijedne kvote: svih 9 se upiše na klik; ponovni pokušaj sa već iskorišćenim
+i nepostojećim `tip_igre_id` je odbijen porukom bez upisivanja ičega; slanje
+jedne neispravne vrednosti (0.50) uz jednu ispravnu odbija **obe** — ni
+ispravna nije upisana. Nalog, događaj, tim i liga su posle testa obrisani.
+
+### 2. `baza/test_podaci.sql` — devet kvota po fudbalskom događaju
+
+Prošireno sa 3 na 9 kvota za svih šest fudbalskih događaja (`dogadjaj_id`
+1-6), po šifarniku iz `schema.sql` (`tip_igre.id` 1-9 = '1','X','2','1X','12',
+'X2','GG','0-2','3+'). Vrednosti su ručno birane tako da dupla šansa (1X, 12,
+X2) uvek bude niža od pojedinačnih kvota koje pokriva — jedini razlog je da
+ponuda ne izgleda apsurdno u pregledu, ne postoji pravilo u CLAUDE.md koje bi
+to zahtevalo.
+
+**Otkriveno usput — postojeći `test_rezultati.sql` je pukao.** Taj fajl
+(fixture za fazu 8, dokumentovan sopstvenim komentarom sa očekivanim
+ishodima) je pretpostavljao da `test_podaci.sql` unosi tačno 3 kvote po
+fudbalskom događaju, pa je i sam upisivao kvote sa **fiksnim ID-jevima**
+(1,2,3 za događaj 1; 7,8,9 za događaj 3; 10,11,12 za događaj 4) i te iste
+brojeve koristio kao `tiket_stavka.kvota_id`. Sa devet kvota po događaju ta
+numeracija više ne važi (događaj 2 sada zauzima baš id-jeve 10-18), pa je
+učitavanje `test_rezultati.sql` posle novog `test_podaci.sql` padalo na
+`Duplicate entry '10' for key 'PRIMARY'`.
+
+Ispravljeno u `test_rezultati.sql`: `INSERT INTO kvota` više ne zadaje `id`
+(baza sama dodeljuje sledeći slobodan), a `tiket_stavka.kvota_id` se sada
+traži preko `(SELECT id FROM kvota WHERE dogadjaj_id = ? AND tip_igre_id =
+(SELECT id FROM tip_igre WHERE sport_id = 1 AND oznaka = ?))` — isti princip
+koji je fajl već koristio za `tip_igre_id` u komentaru „traži se po oznaci,
+ne po pretpostavljenom ID-ju", sada dosledno primenjen i na `kvota_id`.
+Fajl više nikad neće pući zbog toga koliko kvota `test_podaci.sql` upiše.
+
+Testirano: potpuno svež `DROP DATABASE` → `schema.sql` → `test_podaci.sql` →
+`test_rezultati.sql`, sve tri bez greške. Zatim odigran tačan scenario iz
+komentara „OČEKIVANI ISHODI" (događaj 1 → 2:0, događaj 3 → 1:1, događaj 4 →
+otkazan) — svih šest tiketa završilo tačno u dokumentovanom statusu i sa
+dokumentovanim isplaćenim iznosom (T-TEST-01 dobitan/175, T-TEST-02
+gubitan/0, T-TEST-03 dobitan/613, T-TEST-04 storniran/200, T-TEST-05
+dobitan/175, T-TEST-06 gubitan/0), stanje računa tačno 2163.00, a ponovni
+pokušaj obrade događaja 1 odbijen porukom „već obrađen".
+
+### 3. Prva tri tipa u redu, ostatak iza „+N" (`index.php`)
+
+Kvote iz upita već stižu sortirane po `tip_igre.id` (`ORDER BY ti.id`), pa su
+prve tri uvek 1/X/2 — `array_slice($dogadjaj['kvote'], 0, 3)` i `array_slice(
+..., 3)` razdvajaju vidljivo od skrivenog bez novog upita.
+
+Skriveni deo je **već u HTML-u** pri učitavanju stranice, u `<div
+class="kvote-dodatne d-none">` — dugme „+N" ga samo otkriva, bez AJAX-a
+(`js/ponuda.js`, čist `classList.toggle('d-none')`). Panel je dete istog
+`.dogadjaj-red` flex kontejnera kao i `.kvote-grupa`, sa `flex: 1 0 100%` —
+pošto ne staje pored ostatka reda na istoj liniji, flexbox ga sam gurne u
+novi red ispod (`.dogadjaj-red` je zato dobio `flex-wrap: wrap`, ranije je
+imao samo `nowrap` na širim ekranima). Ovaj pristup je izabran umesto
+zasebnog omotača oko celog događaja da se ne bi diralo postojeće `:first-
+of-type`/`:last-child` pravilo koje računa zaobljene ivice bloka lige.
+
+Dugme menja natpis između „+N" i „manje" i `aria-expanded` pri svakom kliku;
+kvote unutar otvorenog panela su obično dugmad `.dugme-kvota`, pa ih
+`js/tiket.js` (koji već sluša klik na `document`, ne na pojedinačne kvote)
+tretira identično onima u vidljivom delu — dodavanje na tiket, isticanje
+`.izabrana` i treperenje pri promeni vrednosti rade bez ijedne izmene u
+`tiket.js`.
+
+Testirano preko headless pregledača (Chrome, snimak ekrana pre i posle
+simuliranog klika): red za Real Madrid — Barselona pokazuje 1/X/2 i dugme
+„+6"; posle klika dugme postaje „manje", a ispod reda se pojavljuje isprekidanom
+linijom odvojen red sa preostalih 6 kvota (1X 1.35, 12 1.45, X2 1.65, GG 1.70,
+0-2 1.95, 3+ 1.85).
+
+### 4. `tip_igre_pogodjen()` i obrada rezultata za svih devet oznaka
+
+Provereno, **bez izmene koda** — funkcija u `includes/rezultati.php` je već
+imala grane za svih devet oznaka (`match` izraz), i `obradi_dogadjaj()` je već
+generička po broju/vrsti kvota na događaju (ne postoji nigde pretpostavka da
+ih ima tačno 3). `operater/rezultati.php` takođe ne pravi tu pretpostavku —
+samo prosleđuje rezultat golova, ne zna niti mu treba da zna koji tipovi igre
+postoje.
+
+Napravljena su dva privremena testa (nisu deo aplikacije, obrisani po
+završetku):
+
+- **Čista logika** — 6 kombinacija rezultata (2:0, 1:1, 0:3, 2:2, 0:0, 5:4) x
+  9 oznaka = 54 provere, plus provera da nepoznata oznaka vraća `null` (a ne
+  pogrešnu ocenu — na tome počiva odbrana iz pravila 7: obrada se prekida
+  umesto da tiho proglasi stavku promašenom). Očekivanja za svaku proveru su
+  ručno izvedena iz značenja oznake (npr. „GG" = oba tima daju gol), ne
+  prepisana iz same funkcije — nezavisna provera, ne provera funkcije protiv
+  same sebe.
+- **Pun lanac kroz bazu** — privremeni događaj sa svih 9 tipova igre,
+  privremeni igrač, po jedan jednonožni tiket za svaku oznaku (da se svaki
+  ishod ocenjuje nezavisno, bez preplitanja pravila 7 sa više stavki na istom
+  tiketu). Rezultat 2:0 provučen kroz pravi `obradi_dogadjaj()`: sve 4 tiketa
+  koje su trebale da budu pogođene (1, 1X, 12, 0-2) su `dobitan`, ostalih 5
+  `gubitan`, stanje računa uvećano tačno za zbir dobitaka (4 x 20.00 = 80.00),
+  upisane tačno 4 transakcije tipa `dobitak`.
+
+Oba testa: SVE OK. Sav test-podaci (događaj, liga, timovi, kvote, tiketi,
+korisnik, transakcije) obrisan na kraju istog skripta.
