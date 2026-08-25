@@ -78,11 +78,17 @@ try {
     upisi_gresku('Greška pri učitavanju ponude: ' . $e->getMessage());
 }
 
+// Token se prosleđuje panelu tiketa da bi ga JS slao uz svaki AJAX zahtev
+$csrf_token = generisi_csrf_token();
+
 $naslov_stranice = 'Ponuda';
 require_once __DIR__ . '/includes/zaglavlje.php';
 ?>
 
 <h1 class="h3 mb-4">Ponuda događaja</h1>
+
+<div class="row g-4">
+<div class="col-lg-8">
 
 <form method="get" class="row g-2 align-items-end mb-4" id="forma-filter">
     <div class="col-auto">
@@ -146,9 +152,10 @@ require_once __DIR__ . '/includes/zaglavlje.php';
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     <?php foreach ($dogadjaj['kvote'] as $kvota): ?>
-                        <span class="btn btn-outline-primary btn-sm disabled">
+                        <button type="button" class="btn btn-outline-primary btn-sm dugme-kvota"
+                                data-kvota-id="<?= (int) $kvota['id'] ?>" aria-pressed="false">
                             <?= bezbedno($kvota['oznaka']) ?> <strong><?= number_format((float) $kvota['vrednost'], 2) ?></strong>
-                        </span>
+                        </button>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -156,4 +163,68 @@ require_once __DIR__ . '/includes/zaglavlje.php';
     <?php endforeach; ?>
 <?php endif; ?>
 
-<?php require_once __DIR__ . '/includes/podnozje.php'; ?>
+</div><!-- kraj kolone sa ponudom -->
+
+<div class="col-lg-4">
+    <?php // Panel puni js/tiket.js preko AJAX-a, pa se ovde ispisuje samo kostur ?>
+    <div class="card shadow-sm tiket-panel" id="tiket-panel"
+         data-koren="<?= KORENSKI_URL ?>" data-csrf="<?= bezbedno($csrf_token) ?>">
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Tiket</span>
+            <span class="badge text-bg-secondary" id="tiket-broj-stavki">0</span>
+        </div>
+
+        <div id="tiket-poruka"></div>
+
+        <ul class="list-group list-group-flush" id="tiket-lista"></ul>
+
+        <div class="card-body text-muted small" id="tiket-prazan">
+            Kliknite na kvotu u ponudi da dodate par na tiket.
+        </div>
+
+        <div class="card-body border-top">
+            <div class="d-flex justify-content-between">
+                <span>Ukupna kvota:</span><strong id="tiket-ukupna-kvota">—</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Potencijalni dobitak:</span><strong id="tiket-dobitak">—</strong>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-3 d-none" id="dugme-ocisti">
+                Isprazni tiket
+            </button>
+        </div>
+
+        <?php if (trenutna_uloga() === 'igrac'): ?>
+            <div class="card-body border-top">
+                <form id="forma-tiket" novalidate>
+                    <div class="small text-muted mb-2">Stanje računa: <span id="tiket-stanje">—</span></div>
+
+                    <label for="tiket-ulog" class="form-label">Ulog</label>
+                    <input type="number" class="form-control" id="tiket-ulog" name="ulog" required
+                           step="0.01" min="<?= MIN_ULOG ?>" max="<?= MAX_ULOG ?>" value="<?= MIN_ULOG ?>">
+                    <div class="small text-danger mt-1" id="tiket-ulog-greska"></div>
+
+                    <button type="submit" class="btn btn-success w-100 mt-3" id="dugme-uplati" disabled>
+                        Uplati tiket
+                    </button>
+                </form>
+            </div>
+        <?php elseif (korisnik_prijavljen()): ?>
+            <div class="card-body border-top small text-muted">
+                Uplata tiketa je dostupna samo igračima.
+            </div>
+        <?php else: ?>
+            <div class="card-body border-top">
+                <p class="small text-muted mb-2">Prijavite se da biste uplatili tiket.</p>
+                <a href="<?= KORENSKI_URL ?>/prijava.php" class="btn btn-primary btn-sm w-100">Prijava</a>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+</div><!-- kraj reda -->
+
+<?php
+$dodatne_skripte = ['tiket.js'];
+require_once __DIR__ . '/includes/podnozje.php';
+?>
