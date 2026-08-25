@@ -328,6 +328,16 @@ h3 { font-size: 1.3rem; }
 
 .kvota.izabrana .oznaka { color: rgba(255, 255, 255, .8); }
 
+/* Prelazak mišem preko VEĆ izabrane kvote. Bez ovog pravila .kvota:hover i
+   .kvota.izabrana imaju istu težinu (po dve klase), pa .kvota:hover nameće
+   svetlu pozadinu, dok tekst ostaje beo iz .izabrana — beli broj na skoro
+   belom polju (odnos 1.08:1, nečitljivo). Izabrana kvota zato pri prelasku
+   samo malo potamni, i tako i dalje javlja da je dugme živo. */
+.kvota.izabrana:hover {
+    background: var(--mornar-700);
+    border-color: var(--mornar-800);
+}
+
 .kvota:disabled,
 .kvota.nedostupna {
     opacity: .45;
@@ -559,6 +569,10 @@ h3 { font-size: 1.3rem; }
 .status-odbijen   { background: var(--gubitak-bg); color: var(--gubitak); }
 .status-na_cekanju{ background: var(--ceka-bg);    color: var(--ceka); }
 
+/* Oznaka sopstvenog naloga u spisku korisnika. Nije ishod ni stanje, pa ne
+   uzima ni zelenu ni crvenu - nosi plavu iz osnovne palete. */
+.status-ja { background: rgba(14, 107, 168, .10); color: var(--plava-500); border-color: rgba(14, 107, 168, .28); }
+
 /* Statusi događaja. Zelena i crvena ovde ne dolaze u obzir - događaj sam po
    sebi nije ni dobitak ni gubitak. Razlikuju se plavom (u ponudi, prima se
    tiket), žutom (počeo, čeka se rezultat) i neutralnom (obrađen); otkazan
@@ -628,6 +642,34 @@ h3 { font-size: 1.3rem; }
 .form-control.is-invalid { border-color: var(--gubitak); }
 .invalid-feedback { color: var(--gubitak); font-size: .85rem; }
 
+/* Pregled izabrane ikonice sporta - kvadratno polje uz padajući meni, da
+   ikonica ima uvek isto mesto bez obzira na širinu */
+.pregled-ikonice {
+    background: var(--papir);
+    border-color: var(--ivica-jaka);
+    color: var(--mornar-800);
+    min-width: 2.9rem;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+/* Dugme "oko" uz polje za lozinku. Pravi ga js/lozinka.js, pa ga u HTML-u
+   nema. Nosi samo ikonicu, zato se poništava uppercase i razmak koji .btn
+   inače daje tekstu, a ivica se izjednačava sa ivicom polja pored. */
+.prikazi-lozinku {
+    border-color: var(--ivica-jaka);
+    color: var(--prigusen);
+    letter-spacing: 0;
+    padding: .5rem .75rem;
+}
+
+.prikazi-lozinku:hover,
+.prikazi-lozinku:focus {
+    background: var(--papir);
+    border-color: var(--ivica-jaka);
+    color: var(--mornar-800);
+}
+
 /* Padajući meniji u filteru ponude. Pregledač im širinu računa po najdužoj
    stavci, pa je meni sporta ("Fudbal", "Tenis") ispadao osetno uži od menija
    lige i sekao duže nazive. Zajednička donja granica ih izjednačava. */
@@ -694,6 +736,45 @@ h3 { font-size: 1.3rem; }
     text-transform: uppercase;
     color: var(--prigusen);
 }
+
+/* Okvir grafikona. Chart.js meri platno prema roditelju, pa roditelj mora
+   imati zadatu visinu — bez nje platno raste u nedogled pri svakom crtanju.
+   Visina uključuje i traku sa oznakama ose, da kartica ne dobije sopstveni
+   uspravni klizač. */
+.grafikon-okvir {
+    position: relative;
+    height: 17rem;
+}
+
+.grafikon-okvir.grafikon-krug { height: 13rem; }
+
+/* Sopstvena legenda kružnog grafikona: uz boju idu i naziv, broj i udeo, pa
+   se kriška može pročitati i kad se tonovi ne razlikuju (štampa, daltonizam). */
+.legenda-grafikona {
+    margin-top: 1rem;
+    font-size: .92rem;
+}
+
+.legenda-grafikona li {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .3rem 0;
+    border-top: 1px solid var(--ivica);
+}
+
+.legenda-grafikona li:first-child { border-top: 0; }
+
+.legenda-grafikona .tacka {
+    width: .7rem;
+    height: .7rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legenda-grafikona .naziv { flex: 1; min-width: 0; }
+.legenda-grafikona .broj { font-weight: 600; }
+.legenda-grafikona .udeo { color: var(--prigusen); min-width: 2.8rem; text-align: right; }
 
 /* Log — jedino mesto sa monospace fontom, jer su redovi poravnati */
 .log-ispis {

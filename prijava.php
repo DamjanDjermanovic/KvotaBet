@@ -121,5 +121,6 @@ $csrf_token = generisi_csrf_token();
     </div>
 </div>
 <script src="<?= KORENSKI_URL ?>/js/validacija.js"></script>
+<script src="<?= KORENSKI_URL ?>/js/lozinka.js"></script>
 </body>
 </html>
