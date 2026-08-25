@@ -131,11 +131,11 @@ $naslov_stranice = 'Logovi';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Logovi</h1>
+<h1 class="mb-4">Logovi</h1>
 
 <?php prikazi_poruke(); ?>
 
-<h2 class="h5 mb-3">Tekstualni log fajlovi</h2>
+<h2 class="mb-3">Tekstualni log fajlovi</h2>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <ul class="nav nav-pills">
@@ -165,23 +165,25 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
 <?php endif; ?>
 
 <?php if (empty($linije)): ?>
-    <div class="alert alert-info">Log fajl je prazan ili ne postoji.</div>
-<?php else: ?>
-    <div class="card mb-5">
-        <div class="card-body p-0">
-            <pre class="p-3 mb-0 small" style="max-height:50vh; overflow-y:auto; white-space:pre-wrap; word-break:break-word;"><?php
-                foreach ($linije as $red) {
-                    echo bezbedno($red) . "\n";
-                }
-            ?></pre>
-        </div>
+    <div class="prazno">
+        <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+        <div class="naslov-praznog">Log fajl je prazan ili ne postoji</div>
+        <p class="mb-3">Fajl se pravi sam pri prvom upisu — otvorite bilo koju stranicu pa se vratite ovde.</p>
+        <a href="<?= KORENSKI_URL ?>/admin/logovi.php?log=<?= $koji_log ?>&broj=<?= $broj_linija ?>" class="btn btn-primary btn-sm">Osveži prikaz</a>
     </div>
-    <p class="text-muted small mt-2">Prikazano <?= count($linije) ?> od maksimalno <?= $broj_linija ?> traženih redova, najnoviji prvi.</p>
+<?php else: ?>
+    <?php // Ispis je monospace i sa fiksnom visinom, jer su redovi loga poravnati po kolonama ?>
+    <pre class="log-ispis mb-2"><?php
+        foreach ($linije as $red) {
+            echo bezbedno($red) . "\n";
+        }
+    ?></pre>
+    <p class="text-muted small mb-5">Prikazano <?= count($linije) ?> od maksimalno <?= $broj_linija ?> traženih redova, najnoviji prvi.</p>
 <?php endif; ?>
 
 <hr class="my-5">
 
-<h2 class="h5 mb-3">Evidencija pristupa u bazi (tabela pristup_log)</h2>
+<h2 class="mb-3">Evidencija pristupa u bazi (tabela pristup_log)</h2>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <p class="text-muted small mb-0">
@@ -204,7 +206,12 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
 </div>
 
 <?php if (empty($zapisi)): ?>
-    <div class="alert alert-info">Nema zapisa u tabeli pristup_log.</div>
+    <div class="prazno">
+        <i class="bi bi-database" aria-hidden="true"></i>
+        <div class="naslov-praznog">Nema zapisa u tabeli pristup_log</div>
+        <p class="mb-3">Tabela se puni sama, pri svakom otvaranju bilo koje stranice.</p>
+        <a href="<?= KORENSKI_URL ?>/admin/statistika.php" class="btn btn-primary btn-sm">Otvori statistiku pristupa</a>
+    </div>
 <?php else: ?>
     <div class="table-responsive">
         <table class="table table-striped table-sm align-middle">

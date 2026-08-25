@@ -95,21 +95,15 @@ try {
     $dokumenti = [];
 }
 
-function boja_statusa_dokumenta(string $status): string
-{
-    return match ($status) {
-        'odobren' => 'success',
-        'odbijen' => 'danger',
-        default => 'warning',
-    };
-}
+// Napomena: boju statusa dokumenta više ne bira PHP - nosi je klasa
+// .status-<vrednost> iz css/style.css, ista kao za tikete i naloge.
 
 $csrf_token = generisi_csrf_token();
 $naslov_stranice = 'Verifikacioni dokumenti';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Verifikacioni dokumenti</h1>
+<h1 class="mb-4">Verifikacioni dokumenti</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -123,7 +117,12 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
 </ul>
 
 <?php if (empty($dokumenti)): ?>
-    <div class="alert alert-info">Nema dokumenata za prikaz.</div>
+    <div class="prazno">
+        <i class="bi bi-file-earmark-check" aria-hidden="true"></i>
+        <div class="naslov-praznog">Nema dokumenata za prikaz</div>
+        <p class="mb-3">Za izabrani status nijedan dokument nije poslat.</p>
+        <a href="<?= KORENSKI_URL ?>/operater/dokumenta.php?status=svi" class="btn btn-primary btn-sm">Prikaži sve dokumente</a>
+    </div>
 <?php else: ?>
     <?php foreach ($dokumenti as $dok): ?>
         <div class="card mb-3">
@@ -147,7 +146,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                     </div>
 
                     <div class="text-end">
-                        <span class="badge text-bg-<?= boja_statusa_dokumenta($dok['status']) ?> text-uppercase mb-2 d-inline-block"><?= bezbedno($dok['status']) ?></span>
+                        <span class="status status-<?= bezbedno($dok['status']) ?> mb-2"><?= bezbedno($dok['status']) ?></span>
 
                         <?php if ($dok['status'] === 'na_cekanju'): ?>
                             <div class="d-flex gap-2 justify-content-end">

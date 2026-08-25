@@ -67,15 +67,19 @@ $csrf_token = generisi_csrf_token();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Prijava — Kladionica</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="<?= KORENSKI_URL ?>/css/style.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body>
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-12 col-md-6 col-lg-5">
-            <div class="card shadow-sm my-5">
+        <div class="col-12">
+            <div class="card auth-karta">
                 <div class="card-body p-4">
-                    <h1 class="h3 mb-4 text-center">Prijava</h1>
+                    <div class="text-center mb-4">
+                        <span class="eyebrow">Kladionica</span>
+                        <h1 class="mb-0">Prijava</h1>
+                    </div>
 
                     <?php if ($greska !== ''): ?>
                         <div class="alert alert-danger"><?= bezbedno($greska) ?></div>
@@ -107,6 +111,9 @@ $csrf_token = generisi_csrf_token();
 
                     <p class="text-center mt-3 mb-0">
                         Nemate nalog? <a href="<?= KORENSKI_URL ?>/registracija.php">Registrujte se</a>
+                    </p>
+                    <p class="text-center text-muted small mt-3 mb-0">
+                        <a href="<?= KORENSKI_URL ?>/index.php">Nazad na ponudu</a>
                     </p>
                 </div>
             </div>

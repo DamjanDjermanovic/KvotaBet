@@ -14,7 +14,7 @@ $lige = [];
 $dogadjaji = [];
 
 try {
-    $sportovi = $pdo->query('SELECT id, naziv, ikonica FROM sport WHERE aktivan = 1 ORDER BY naziv')->fetchAll();
+    $sportovi = $pdo->query('SELECT id, naziv FROM sport WHERE aktivan = 1 ORDER BY naziv')->fetchAll();
 
     // Lista liga u padajućem meniju prati izabrani sport - kad korisnik
     // promeni sport, meni lige se odmah suzi samo na njegove lige
@@ -33,8 +33,8 @@ try {
     }
 
     $sqlDogadjaji = "SELECT d.id, d.vreme_pocetka,
-                             s.id AS sport_id, s.naziv AS sport_naziv, s.ikonica,
-                             l.id AS liga_id, l.naziv AS liga_naziv,
+                             s.id AS sport_id, s.naziv AS sport_naziv,
+                             l.id AS liga_id, l.naziv AS liga_naziv, l.drzava AS liga_drzava,
                              td.naziv AS domacin_naziv, tg.naziv AS gost_naziv
                       FROM dogadjaj d
                       JOIN liga l ON l.id = d.liga_id
@@ -85,7 +85,7 @@ $naslov_stranice = 'Ponuda';
 require_once __DIR__ . '/includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Ponuda događaja</h1>
+<h1 class="mb-4">Ponuda događaja</h1>
 
 <div class="row g-4">
 <div class="col-lg-8">
@@ -93,7 +93,7 @@ require_once __DIR__ . '/includes/zaglavlje.php';
 <form method="get" class="row g-2 align-items-end mb-4" id="forma-filter">
     <div class="col-auto">
         <label for="sport_id" class="form-label">Sport</label>
-        <select class="form-select" id="sport_id" name="sport_id" onchange="this.form.submit()">
+        <select class="form-select filter-izbor" id="sport_id" name="sport_id" onchange="this.form.submit()">
             <option value="">Svi sportovi</option>
             <?php foreach ($sportovi as $sport): ?>
                 <option value="<?= (int) $sport['id'] ?>" <?= $sport_id === (int) $sport['id'] ? 'selected' : '' ?>>
@@ -104,7 +104,7 @@ require_once __DIR__ . '/includes/zaglavlje.php';
     </div>
     <div class="col-auto">
         <label for="liga_id" class="form-label">Liga</label>
-        <select class="form-select" id="liga_id" name="liga_id" onchange="this.form.submit()">
+        <select class="form-select filter-izbor" id="liga_id" name="liga_id" onchange="this.form.submit()">
             <option value="">Sve lige</option>
             <?php foreach ($lige as $liga): ?>
                 <option value="<?= (int) $liga['id'] ?>" <?= $liga_id === (int) $liga['id'] ? 'selected' : '' ?>>
@@ -124,102 +124,132 @@ require_once __DIR__ . '/includes/zaglavlje.php';
 </form>
 
 <?php if (empty($dogadjaji)): ?>
-    <div class="alert alert-info">Trenutno nema najavljenih događaja za izabrani filter.</div>
+    <div class="prazno">
+        <i class="bi bi-calendar-x" aria-hidden="true"></i>
+        <div class="naslov-praznog">Nema najavljenih događaja</div>
+        <p class="mb-3">Za izabrani filter trenutno nema ničega u ponudi.</p>
+        <a href="<?= KORENSKI_URL ?>/index.php" class="btn btn-primary btn-sm">Prikaži celu ponudu</a>
+    </div>
 <?php else: ?>
     <?php
+    // Događaji stižu sortirani po sportu, ligi i vremenu, pa se zaglavlja
+    // ispisuju "u prolazu". Redovi jedne lige moraju stajati u sopstvenom
+    // omotaču: stil računa gornju ivicu i zaobljenje reda po tome da li je
+    // prvi ili poslednji u svom bloku.
     $tekuci_sport = null;
     $tekuca_liga = null;
+    $blok_otvoren = false;
     ?>
     <?php foreach ($dogadjaji as $dogadjaj): ?>
         <?php if ($tekuci_sport !== (int) $dogadjaj['sport_id']): ?>
+            <?php if ($blok_otvoren): ?></div><?php $blok_otvoren = false; endif; ?>
             <?php $tekuci_sport = (int) $dogadjaj['sport_id']; $tekuca_liga = null; ?>
-            <h2 class="h4 mt-4">
-                <?php if (!empty($dogadjaj['ikonica'])): ?><i class="bi <?= bezbedno($dogadjaj['ikonica']) ?>"></i><?php endif; ?>
-                <?= bezbedno($dogadjaj['sport_naziv']) ?>
-            </h2>
+            <?php // Ikonica sporta se ovde namerno ne ispisuje ?>
+            <h2 class="mt-4 mb-2"><?= bezbedno($dogadjaj['sport_naziv']) ?></h2>
         <?php endif; ?>
 
         <?php if ($tekuca_liga !== (int) $dogadjaj['liga_id']): ?>
+            <?php if ($blok_otvoren): ?></div><?php $blok_otvoren = false; endif; ?>
             <?php $tekuca_liga = (int) $dogadjaj['liga_id']; ?>
-            <h3 class="h6 text-muted mt-3"><?= bezbedno($dogadjaj['liga_naziv']) ?></h3>
+            <div class="liga-zaglavlje mt-3">
+                <i class="bi bi-trophy" aria-hidden="true"></i>
+                <?= bezbedno($dogadjaj['liga_naziv']) ?>
+                <?php if (!empty($dogadjaj['liga_drzava'])): ?>
+                    <span class="drzava"><?= bezbedno($dogadjaj['liga_drzava']) ?></span>
+                <?php endif; ?>
+            </div>
+            <div class="mb-3"><?php $blok_otvoren = true; ?>
         <?php endif; ?>
 
-        <div class="card mb-2">
-            <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div>
-                    <div class="fw-semibold"><?= bezbedno($dogadjaj['domacin_naziv']) ?> — <?= bezbedno($dogadjaj['gost_naziv']) ?></div>
-                    <div class="text-muted small"><?= bezbedno(formatiraj_datum_vreme($dogadjaj['vreme_pocetka'])) ?></div>
+            <div class="dogadjaj-red">
+                <div class="dogadjaj-vreme">
+                    <span class="dan"><?= bezbedno(formatiraj_datum($dogadjaj['vreme_pocetka'])) ?></span>
+                    <?= bezbedno(date('H:i', strtotime($dogadjaj['vreme_pocetka']))) ?>
                 </div>
-                <div class="d-flex flex-wrap gap-2">
+
+                <div class="dogadjaj-timovi">
+                    <span class="tim"><?= bezbedno($dogadjaj['domacin_naziv']) ?></span>
+                    <span class="protiv">protiv</span>
+                    <span class="tim"><?= bezbedno($dogadjaj['gost_naziv']) ?></span>
+                </div>
+
+                <div class="kvote-grupa">
                     <?php foreach ($dogadjaj['kvote'] as $kvota): ?>
-                        <button type="button" class="btn btn-outline-primary btn-sm dugme-kvota"
+                        <?php // aria-pressed prati .izabrana, da i čitač ekrana zna šta je na tiketu ?>
+                        <button type="button" class="kvota dugme-kvota"
                                 data-kvota-id="<?= (int) $kvota['id'] ?>" aria-pressed="false">
-                            <?= bezbedno($kvota['oznaka']) ?> <strong><?= number_format((float) $kvota['vrednost'], 2) ?></strong>
+                            <span class="oznaka"><?= bezbedno($kvota['oznaka']) ?></span>
+                            <span class="kvota-vrednost"><?= number_format((float) $kvota['vrednost'], 2) ?></span>
                         </button>
                     <?php endforeach; ?>
                 </div>
             </div>
-        </div>
     <?php endforeach; ?>
+    <?php if ($blok_otvoren): ?></div><?php endif; ?>
 <?php endif; ?>
 
 </div><!-- kraj kolone sa ponudom -->
 
 <div class="col-lg-4">
     <?php // Panel puni js/tiket.js preko AJAX-a, pa se ovde ispisuje samo kostur ?>
-    <div class="card shadow-sm tiket-panel" id="tiket-panel"
+    <div class="tiket-panel" id="tiket-panel"
          data-koren="<?= KORENSKI_URL ?>" data-csrf="<?= bezbedno($csrf_token) ?>">
 
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-semibold">Tiket</span>
-            <span class="badge text-bg-secondary" id="tiket-broj-stavki">0</span>
+        <div class="tiket-glava">
+            <i class="bi bi-receipt" aria-hidden="true"></i>
+            Tiket
+            <span class="broj-parova" id="tiket-broj-stavki">0</span>
         </div>
+
+        <?php // Nazubljena ivica listića - čist ukras, zato skrivena od čitača ekrana ?>
+        <div class="tiket-zub" aria-hidden="true"></div>
 
         <div id="tiket-poruka"></div>
 
-        <ul class="list-group list-group-flush" id="tiket-lista"></ul>
+        <div id="tiket-lista"></div>
 
-        <div class="card-body text-muted small" id="tiket-prazan">
+        <div class="tiket-prazan" id="tiket-prazan">
+            <i class="bi bi-hand-index-thumb" aria-hidden="true"></i>
             Kliknite na kvotu u ponudi da dodate par na tiket.
         </div>
 
-        <div class="card-body border-top">
-            <div class="d-flex justify-content-between">
-                <span>Ukupna kvota:</span><strong id="tiket-ukupna-kvota">—</strong>
+        <div class="tiket-zbir">
+            <div class="red">
+                <span>Ukupna kvota</span>
+                <span class="vrednost" id="tiket-ukupna-kvota">—</span>
             </div>
-            <div class="d-flex justify-content-between">
-                <span>Potencijalni dobitak:</span><strong id="tiket-dobitak">—</strong>
+            <div class="red dobitak-red">
+                <span>Potencijalni dobitak</span>
+                <span class="vrednost" id="tiket-dobitak">—</span>
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-3 d-none" id="dugme-ocisti">
-                Isprazni tiket
-            </button>
-        </div>
 
-        <?php if (trenutna_uloga() === 'igrac'): ?>
-            <div class="card-body border-top">
-                <form id="forma-tiket" novalidate>
-                    <div class="small text-muted mb-2">Stanje računa: <span id="tiket-stanje">—</span></div>
+            <?php if (trenutna_uloga() === 'igrac'): ?>
+                <form id="forma-tiket" class="mt-3" novalidate>
+                    <div class="red">
+                        <span>Stanje računa</span>
+                        <span class="vrednost" id="tiket-stanje">—</span>
+                    </div>
 
-                    <label for="tiket-ulog" class="form-label">Ulog</label>
+                    <label for="tiket-ulog" class="form-label mt-2">Ulog</label>
                     <input type="number" class="form-control" id="tiket-ulog" name="ulog" required
                            step="0.01" min="<?= MIN_ULOG ?>" max="<?= MAX_ULOG ?>" value="<?= MIN_ULOG ?>">
-                    <div class="small text-danger mt-1" id="tiket-ulog-greska"></div>
+                    <div class="invalid-feedback d-block" id="tiket-ulog-greska"></div>
 
-                    <button type="submit" class="btn btn-success w-100 mt-3" id="dugme-uplati" disabled>
+                    <button type="submit" class="btn btn-uplati mt-3" id="dugme-uplati" disabled>
                         Uplati tiket
                     </button>
                 </form>
-            </div>
-        <?php elseif (korisnik_prijavljen()): ?>
-            <div class="card-body border-top small text-muted">
-                Uplata tiketa je dostupna samo igračima.
-            </div>
-        <?php else: ?>
-            <div class="card-body border-top">
-                <p class="small text-muted mb-2">Prijavite se da biste uplatili tiket.</p>
-                <a href="<?= KORENSKI_URL ?>/prijava.php" class="btn btn-primary btn-sm w-100">Prijava</a>
-            </div>
-        <?php endif; ?>
+            <?php elseif (korisnik_prijavljen()): ?>
+                <p class="small text-muted mb-0 mt-3">Uplata tiketa je dostupna samo igračima.</p>
+            <?php else: ?>
+                <p class="small text-muted mb-2 mt-3">Prijavite se da biste uplatili tiket.</p>
+                <a href="<?= KORENSKI_URL ?>/prijava.php" class="btn btn-uplati">Prijava</a>
+            <?php endif; ?>
+
+            <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-2 d-none" id="dugme-ocisti">
+                Isprazni tiket
+            </button>
+        </div>
     </div>
 </div>
 </div><!-- kraj reda -->

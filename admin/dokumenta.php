@@ -95,7 +95,7 @@ $naslov_stranice = 'Dokumenti';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Verifikacioni dokumenti</h1>
+<h1 class="mb-4">Verifikacioni dokumenti</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -127,7 +127,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         <div class="text-muted small">
                             <?= bezbedno($dokument['korisnicko_ime']) ?>
                             <?php if ($dokument['verifikovan']): ?>
-                                <span class="badge text-bg-success">verifikovan</span>
+                                <span class="status status-odobren">verifikovan</span>
                             <?php endif; ?>
                         </div>
                     </td>
@@ -138,9 +138,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                     </td>
                     <td class="small"><?= number_format($dokument['velicina_bajtova'] / 1024, 0) ?> KB</td>
                     <td>
-                        <span class="badge text-bg-<?= match ($dokument['status']) { 'odobren' => 'success', 'odbijen' => 'danger', default => 'warning' } ?>">
-                            <?= bezbedno($dokument['status']) ?>
-                        </span>
+                        <span class="status status-<?= bezbedno($dokument['status']) ?>"><?= bezbedno($dokument['status']) ?></span>
                     </td>
                     <td class="small"><?= bezbedno(formatiraj_datum_vreme($dokument['datum_slanja'])) ?></td>
                     <td class="text-end">
@@ -155,7 +153,15 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                 </tr>
             <?php endforeach; ?>
             <?php if (empty($dokumenti)): ?>
-                <tr><td colspan="6" class="text-muted">Nema poslatih dokumenata.</td></tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="prazno">
+                            <i class="bi bi-file-earmark-x" aria-hidden="true"></i>
+                            <div class="naslov-praznog">Nema poslatih dokumenata</div>
+                            <p class="mb-0">Igrači šalju verifikacione dokumente sa svoje stranice Profil.</p>
+                        </div>
+                    </td>
+                </tr>
             <?php endif; ?>
         </tbody>
     </table>

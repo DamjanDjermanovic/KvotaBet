@@ -160,21 +160,15 @@ try {
     $korisnici = [];
 }
 
-function boja_statusa_naloga(string $status): string
-{
-    return match ($status) {
-        'aktivan' => 'success',
-        'blokiran' => 'danger',
-        default => 'secondary',
-    };
-}
+// Napomena: boju statusa naloga više ne bira PHP - nosi je klasa
+// .status-<vrednost> iz css/style.css, ista kao za tikete i dokumenta.
 
 $csrf_token = generisi_csrf_token();
 $naslov_stranice = 'Korisnici';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Korisnici</h1>
+<h1 class="mb-4">Korisnici</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -182,7 +176,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3"><?= $korisnik_za_izmenu ? 'Izmena korisnika' : 'Novi korisnik' ?></h2>
+                <h2 class="mb-3"><?= $korisnik_za_izmenu ? 'Izmena korisnika' : 'Novi korisnik' ?></h2>
                 <form method="post" id="forma-korisnik">
                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
                     <input type="hidden" name="akcija" value="sacuvaj">
@@ -285,7 +279,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                                 <div class="text-muted small"><?= bezbedno($korisnik['korisnicko_ime']) ?> · <?= bezbedno($korisnik['email']) ?></div>
                             </td>
                             <td><?= bezbedno($korisnik['uloga_naziv']) ?></td>
-                            <td><span class="badge text-bg-<?= boja_statusa_naloga($korisnik['status']) ?>"><?= bezbedno($korisnik['status']) ?></span></td>
+                            <td><span class="status status-<?= bezbedno($korisnik['status']) ?>"><?= bezbedno($korisnik['status']) ?></span></td>
                             <td><?= bezbedno(formatiraj_datum($korisnik['datum_registracije'])) ?></td>
                             <td class="text-end">
                                 <a href="<?= KORENSKI_URL ?>/admin/korisnici.php?izmeni=<?= (int) $korisnik['id'] ?>" class="btn btn-sm btn-outline-primary">Izmeni</a>
@@ -313,13 +307,21 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                                         <button type="submit" class="btn btn-sm btn-outline-danger">Obriši</button>
                                     </form>
                                 <?php else: ?>
-                                    <span class="badge text-bg-light text-dark">to ste vi</span>
+                                    <span class="status">to ste vi</span>
                                 <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($korisnici)): ?>
-                        <tr><td colspan="5" class="text-muted">Nema korisnika.</td></tr>
+                        <tr>
+                            <td colspan="5">
+                                <div class="prazno">
+                                    <i class="bi bi-people" aria-hidden="true"></i>
+                                    <div class="naslov-praznog">Nema nijednog korisnika</div>
+                                    <p class="mb-0">Novi nalog se dodaje formom levo.</p>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>

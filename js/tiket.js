@@ -81,34 +81,46 @@
     // preko innerHTML - nazivi timova dolaze iz baze i ne smeju se ubaciti u
     // stranicu kao HTML.
     function napraviStavku(stavka) {
-        var red = document.createElement('li');
-        red.className = 'list-group-item d-flex justify-content-between align-items-start gap-2';
-
-        var opis = document.createElement('div');
+        var red = document.createElement('div');
+        red.className = 'tiket-stavka';
 
         var par = document.createElement('div');
-        par.className = 'small fw-semibold';
-        par.textContent = stavka.domacin + ' — ' + stavka.gost;
+        par.className = 'par';
+
+        var mec = document.createElement('div');
+        mec.className = 'mec';
+        mec.textContent = stavka.domacin + ' — ' + stavka.gost;
 
         var detalji = document.createElement('div');
-        detalji.className = 'text-muted';
-        detalji.style.fontSize = '0.75rem';
-        detalji.textContent = stavka.liga + ' · ' + stavka.vreme;
 
-        opis.appendChild(par);
-        opis.appendChild(detalji);
+        var tip = document.createElement('span');
+        tip.className = 'tip';
+        tip.textContent = stavka.oznaka;
 
-        var desno = document.createElement('div');
-        desno.className = 'd-flex align-items-center gap-2';
+        var dopuna = document.createElement('span');
+        dopuna.className = 'text-muted small';
+        dopuna.textContent = ' ' + stavka.liga + ' · ' + stavka.vreme;
+
+        detalji.appendChild(tip);
+        detalji.appendChild(dopuna);
+
+        par.appendChild(mec);
+        par.appendChild(detalji);
 
         var kvota = document.createElement('span');
-        kvota.className = 'badge text-bg-primary';
-        kvota.textContent = stavka.oznaka + ' ' + stavka.vrednost;
+        kvota.className = 'kvota-vrednost';
+        kvota.textContent = stavka.vrednost;
 
         var dugme = document.createElement('button');
         dugme.type = 'button';
-        dugme.className = 'btn-close';
+        dugme.className = 'tiket-ukloni';
         dugme.setAttribute('aria-label', 'Ukloni par sa tiketa');
+
+        var ikonica = document.createElement('i');
+        ikonica.className = 'bi bi-x-lg';
+        ikonica.setAttribute('aria-hidden', 'true');
+        dugme.appendChild(ikonica);
+
         dugme.addEventListener('click', function () {
             posalji('tiket_ukloni.php', {
                 kvota_id: stavka.kvota_id,
@@ -116,11 +128,9 @@
             }).then(osveziPanel);
         });
 
-        desno.appendChild(kvota);
-        desno.appendChild(dugme);
-
-        red.appendChild(opis);
-        red.appendChild(desno);
+        red.appendChild(par);
+        red.appendChild(kvota);
+        red.appendChild(dugme);
 
         return red;
     }
@@ -134,10 +144,37 @@
 
         document.querySelectorAll('.dugme-kvota').forEach(function (dugme) {
             var jeIzabrana = izabrane.indexOf(dugme.dataset.kvotaId) !== -1;
-            dugme.classList.toggle('active', jeIzabrana);
+            dugme.classList.toggle('izabrana', jeIzabrana);
             dugme.setAttribute('aria-pressed', jeIzabrana ? 'true' : 'false');
         });
     }
+
+    // Kvote u ponudi su ispisane pri učitavanju stranice, a operater ih u
+    // međuvremenu može izmeniti. Server uz svaku stavku tiketa vraća aktuelnu
+    // vrednost, pa se dugme u ponudi ovde ispravi i nakratko zatreperi
+    // (klasa .promenjena) - igrač tako ne previdi da mu se kvota promenila
+    // između dodavanja para i uplate.
+    function osveziVrednostiKvota(stavke) {
+        stavke.forEach(function (stavka) {
+            var dugme = document.querySelector('.dugme-kvota[data-kvota-id="' + stavka.kvota_id + '"]');
+            var polje = dugme ? dugme.querySelector('.kvota-vrednost') : null;
+
+            if (!polje || polje.textContent === stavka.vrednost) {
+                return;
+            }
+
+            polje.textContent = stavka.vrednost;
+            dugme.classList.add('promenjena');
+        });
+    }
+
+    // Klasa se skida čim treperenje prođe, da bi animacija mogla ponovo da se
+    // pokrene ako se ista kvota promeni još jednom
+    document.addEventListener('animationend', function (dogadjaj) {
+        if (dogadjaj.target.classList && dogadjaj.target.classList.contains('promenjena')) {
+            dogadjaj.target.classList.remove('promenjena');
+        }
+    });
 
     // Iscrtava ceo panel na osnovu stanja koje je vratio server
     function prikaziTiket(podaci) {
@@ -157,14 +194,20 @@
         if (stanjeRacuna) {
             stanjeRacuna.textContent = podaci.stanje_racuna || '—';
         }
+        // Na praznom tiketu se poruka o ulogu ne ispisuje: granice uloga i
+        // stanje računa imaju smisla tek kad ima šta da se uplati. Server i
+        // dalje vraća 'ulog_greska' i uz prazan tiket - proračun ne zavisi od
+        // toga da li se poruka prikazuje, a uplata je ionako onemogućena kroz
+        // 'moze_uplata', koje traži bar jednu stavku.
         if (greskaUloga) {
-            greskaUloga.textContent = podaci.ulog_greska || '';
+            greskaUloga.textContent = imaStavki ? (podaci.ulog_greska || '') : '';
         }
         if (dugmeUplati) {
             dugmeUplati.disabled = !podaci.moze_uplata;
         }
 
         oznaciKvoteUPonudi(podaci.stavke);
+        osveziVrednostiKvota(podaci.stavke);
     }
 
     // Jedinstvena obrada svakog odgovora sa servera: prvo se osveži panel, pa
@@ -195,7 +238,7 @@
             return;
         }
 
-        var fajl = dugme.classList.contains('active') ? 'tiket_ukloni.php' : 'tiket_dodaj.php';
+        var fajl = dugme.classList.contains('izabrana') ? 'tiket_ukloni.php' : 'tiket_dodaj.php';
 
         dugme.disabled = true;
         posalji(fajl, {

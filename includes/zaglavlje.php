@@ -15,6 +15,45 @@ $naslov_stranice = $naslov_stranice ?? 'Kladionica';
 // pristupa u admin panelu
 upisi_pristup($_SERVER['REQUEST_URI'] ?? '', $_SESSION['korisnicko_ime'] ?? null);
 evidentiraj_pristup_u_bazi(konektuj_bazu(), $_SESSION['korisnik_id'] ?? null, $_SERVER['REQUEST_URI'] ?? '');
+
+// Stanje računa se prikazuje u navigaciji, pa se ovde i čita. Račun za
+// klađenje ima samo igrač - operater i admin ga nemaju, a gost nije prijavljen.
+$stanje_u_navigaciji = null;
+
+if (trenutna_uloga() === 'igrac' && isset($_SESSION['korisnik_id'])) {
+    try {
+        $upit_stanja = konektuj_bazu()->prepare('SELECT stanje_racuna FROM korisnik WHERE id = ?');
+        $upit_stanja->execute([(int) $_SESSION['korisnik_id']]);
+        $procitano_stanje = $upit_stanja->fetchColumn();
+
+        if ($procitano_stanje !== false) {
+            $stanje_u_navigaciji = formatiraj_novac($procitano_stanje);
+        }
+    } catch (PDOException $e) {
+        // Neuspelo čitanje stanja ne sme da obori celu stranicu - navigacija se
+        // tada samo ispiše bez iznosa, a uzrok ostane zabeležen u greske.log
+        upisi_gresku('Greška pri čitanju stanja računa za navigaciju: ' . $e->getMessage());
+    }
+}
+
+// Ispisuje jednu stavku glavne navigacije. Stavka koja pokazuje na stranicu
+// koja se upravo prikazuje dobija klasu .active (stil je istakne tankom crtom
+// ispod) i atribut aria-current, po kome čitači ekrana javljaju gde se
+// korisnik nalazi. Poređenje ide preko PHP_SELF, jer se isti naziv fajla
+// javlja u više foldera (npr. transakcije.php i kod igrača i kod admina).
+function stavka_menija(string $adresa, string $naziv): void
+{
+    $puna_adresa = KORENSKI_URL . $adresa;
+    $aktivna = ($_SERVER['PHP_SELF'] ?? '') === $puna_adresa;
+
+    $klasa = $aktivna ? 'nav-link active' : 'nav-link';
+    $aria = $aktivna ? ' aria-current="page"' : '';
+
+    echo '<li class="nav-item">'
+        . '<a class="' . $klasa . '"' . $aria . ' href="' . bezbedno($puna_adresa) . '">'
+        . bezbedno($naziv)
+        . '</a></li>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="sr">
@@ -28,56 +67,71 @@ evidentiraj_pristup_u_bazi(konektuj_bazu(), $_SESSION['korisnik_id'] ?? null, $_
 </head>
 <body class="d-flex flex-column min-vh-100">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<?php // Prečica za tastaturu: nevidljiva je dok se ne dobije fokus tabulatorom ?>
+<a class="preskoci" href="#sadrzaj">Preskoči na sadržaj</a>
+
+<nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container">
-        <a class="navbar-brand" href="<?= KORENSKI_URL ?>/index.php">Kladionica</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#glavniMeni">
+        <a class="navbar-brand" href="<?= KORENSKI_URL ?>/index.php">
+            <i class="bi bi-ticket-perforated" aria-hidden="true"></i>
+            Kladionica
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#glavniMeni"
+                aria-controls="glavniMeni" aria-expanded="false" aria-label="Prikaži meni">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="glavniMeni">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/index.php">Ponuda</a></li>
+                <?php stavka_menija('/index.php', 'Ponuda'); ?>
 
                 <?php if (trenutna_uloga() === 'igrac'): ?>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/igrac/uplata.php">Uplata sredstava</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/igrac/tiketi.php">Moji tiketi</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/igrac/transakcije.php">Transakcije</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/igrac/profil.php">Profil</a></li>
+                    <?php stavka_menija('/igrac/uplata.php', 'Uplata sredstava'); ?>
+                    <?php stavka_menija('/igrac/tiketi.php', 'Moji tiketi'); ?>
+                    <?php stavka_menija('/igrac/transakcije.php', 'Transakcije'); ?>
+                    <?php stavka_menija('/igrac/profil.php', 'Profil'); ?>
                 <?php elseif (trenutna_uloga() === 'operater'): ?>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/sportovi.php">Sportovi</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/lige.php">Lige</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/timovi.php">Timovi</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/tipovi_igre.php">Tipovi igre</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/dogadjaji.php">Događaji i kvote</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/rezultati.php">Rezultati</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/dokumenta.php">Dokumenta</a></li>
+                    <?php stavka_menija('/operater/sportovi.php', 'Sportovi'); ?>
+                    <?php stavka_menija('/operater/lige.php', 'Lige'); ?>
+                    <?php stavka_menija('/operater/timovi.php', 'Timovi'); ?>
+                    <?php stavka_menija('/operater/tipovi_igre.php', 'Tipovi igre'); ?>
+                    <?php stavka_menija('/operater/dogadjaji.php', 'Događaji i kvote'); ?>
+                    <?php stavka_menija('/operater/rezultati.php', 'Rezultati'); ?>
+                    <?php stavka_menija('/operater/dokumenta.php', 'Dokumenta'); ?>
                 <?php elseif (trenutna_uloga() === 'admin'): ?>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/korisnici.php">Korisnici</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/uloge.php">Uloge</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/tiketi.php">Tiketi</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/transakcije.php">Transakcije</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/dokumenta.php">Dokumenti</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/logovi.php">Logovi</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/statistika.php">Statistika</a></li>
+                    <?php stavka_menija('/admin/korisnici.php', 'Korisnici'); ?>
+                    <?php stavka_menija('/admin/uloge.php', 'Uloge'); ?>
+                    <?php stavka_menija('/admin/tiketi.php', 'Tiketi'); ?>
+                    <?php stavka_menija('/admin/transakcije.php', 'Transakcije'); ?>
+                    <?php stavka_menija('/admin/dokumenta.php', 'Dokumenti'); ?>
+                    <?php stavka_menija('/admin/logovi.php', 'Logovi'); ?>
+                    <?php stavka_menija('/admin/statistika.php', 'Statistika'); ?>
                 <?php endif; ?>
             </ul>
 
-            <ul class="navbar-nav">
+            <ul class="navbar-nav align-items-lg-center">
                 <?php if (korisnik_prijavljen()): ?>
+                    <?php if ($stanje_u_navigaciji !== null): ?>
+                        <li class="nav-item me-lg-3 my-2 my-lg-0">
+                            <span class="nav-stanje" title="Stanje virtuelnog računa">
+                                <i class="bi bi-wallet2" aria-hidden="true"></i>
+                                <?= bezbedno($stanje_u_navigaciji) ?>
+                            </span>
+                        </li>
+                    <?php endif; ?>
                     <li class="nav-item">
-                        <span class="navbar-text me-3">
+                        <span class="navbar-text me-lg-2">
                             <?= bezbedno($_SESSION['korisnicko_ime']) ?> (<?= bezbedno(trenutna_uloga()) ?>)
                         </span>
                     </li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/odjava.php">Odjava</a></li>
+                    <?php stavka_menija('/odjava.php', 'Odjava'); ?>
                 <?php else: ?>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/prijava.php">Prijava</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/registracija.php">Registracija</a></li>
+                    <?php stavka_menija('/prijava.php', 'Prijava'); ?>
+                    <?php stavka_menija('/registracija.php', 'Registracija'); ?>
                 <?php endif; ?>
             </ul>
         </div>
     </div>
 </nav>
 
-<main class="flex-grow-1">
+<main class="flex-grow-1" id="sadrzaj">
 <div class="container py-4">

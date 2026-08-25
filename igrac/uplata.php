@@ -88,13 +88,16 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
 
 <div class="row justify-content-center">
     <div class="col-12 col-md-6">
-        <h1 class="h3 mb-4">Uplata sredstava</h1>
+        <h1 class="mb-4">Uplata sredstava</h1>
 
         <?php prikazi_poruke(); ?>
 
         <div class="card shadow-sm">
             <div class="card-body">
-                <p class="mb-3">Trenutno stanje računa: <strong><?= $stanje_racuna !== null ? bezbedno(formatiraj_novac($stanje_racuna)) : '—' ?></strong></p>
+                <p class="mb-3">
+                    <span class="eyebrow">Trenutno stanje računa</span>
+                    <strong class="stanje-iznos fs-4"><?= $stanje_racuna !== null ? bezbedno(formatiraj_novac($stanje_racuna)) : '—' ?></strong>
+                </p>
 
                 <form method="post" id="forma-uplata">
                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">

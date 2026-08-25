@@ -109,15 +109,20 @@ $max_datum_rodjenja = date('Y-m-d', strtotime('-' . MIN_GODINA_ZA_REGISTRACIJU .
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Registracija — Kladionica</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="<?= KORENSKI_URL ?>/css/style.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body>
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-6">
-            <div class="card shadow-sm my-5">
+        <div class="col-12">
+            <?php // .auth-karta sama drži širinu i razmak, pa Bootstrap kolone ovde ne stežu sadržaj ?>
+            <div class="card auth-karta">
                 <div class="card-body p-4">
-                    <h1 class="h3 mb-4 text-center">Registracija</h1>
+                    <div class="text-center mb-4">
+                        <span class="eyebrow">Kladionica</span>
+                        <h1 class="mb-0">Registracija</h1>
+                    </div>
 
                     <?php if (!empty($greske['opsta'])): ?>
                         <div class="alert alert-danger"><?= bezbedno($greske['opsta']) ?></div>
@@ -127,14 +132,14 @@ $max_datum_rodjenja = date('Y-m-d', strtotime('-' . MIN_GODINA_ZA_REGISTRACIJU .
                         <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-sm-6 mb-3">
                                 <label for="ime" class="form-label">Ime</label>
                                 <input type="text" class="form-control <?= isset($greske['ime']) ? 'is-invalid' : '' ?>"
                                        id="ime" name="ime" required minlength="2" maxlength="50"
                                        value="<?= bezbedno($uneto['ime']) ?>">
                                 <div class="invalid-feedback"><?= bezbedno($greske['ime'] ?? 'Unesite ime.') ?></div>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-sm-6 mb-3">
                                 <label for="prezime" class="form-label">Prezime</label>
                                 <input type="text" class="form-control <?= isset($greske['prezime']) ? 'is-invalid' : '' ?>"
                                        id="prezime" name="prezime" required minlength="2" maxlength="50"
@@ -160,13 +165,13 @@ $max_datum_rodjenja = date('Y-m-d', strtotime('-' . MIN_GODINA_ZA_REGISTRACIJU .
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-sm-6 mb-3">
                                 <label for="lozinka" class="form-label">Lozinka</label>
                                 <input type="password" class="form-control <?= isset($greske['lozinka']) ? 'is-invalid' : '' ?>"
                                        id="lozinka" name="lozinka" required minlength="6">
                                 <div class="invalid-feedback"><?= bezbedno($greske['lozinka'] ?? 'Bar 6 znakova, slovo i cifra.') ?></div>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-sm-6 mb-3">
                                 <label for="potvrda_lozinke" class="form-label">Potvrda lozinke</label>
                                 <input type="password" class="form-control <?= isset($greske['potvrda_lozinke']) ? 'is-invalid' : '' ?>"
                                        id="potvrda_lozinke" name="potvrda_lozinke" required minlength="6">
@@ -175,14 +180,14 @@ $max_datum_rodjenja = date('Y-m-d', strtotime('-' . MIN_GODINA_ZA_REGISTRACIJU .
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-sm-6 mb-3">
                                 <label for="datum_rodjenja" class="form-label">Datum rođenja</label>
                                 <input type="date" class="form-control <?= isset($greske['datum_rodjenja']) ? 'is-invalid' : '' ?>"
                                        id="datum_rodjenja" name="datum_rodjenja" required max="<?= bezbedno($max_datum_rodjenja) ?>"
                                        value="<?= bezbedno($uneto['datum_rodjenja']) ?>">
                                 <div class="invalid-feedback"><?= bezbedno($greske['datum_rodjenja'] ?? 'Morate imati bar ' . MIN_GODINA_ZA_REGISTRACIJU . ' godina.') ?></div>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-sm-6 mb-3">
                                 <label for="telefon" class="form-label">Telefon <span class="text-muted">(opciono)</span></label>
                                 <input type="text" class="form-control <?= isset($greske['telefon']) ? 'is-invalid' : '' ?>"
                                        id="telefon" name="telefon" maxlength="20"
@@ -196,6 +201,10 @@ $max_datum_rodjenja = date('Y-m-d', strtotime('-' . MIN_GODINA_ZA_REGISTRACIJU .
 
                     <p class="text-center mt-3 mb-0">
                         Već imate nalog? <a href="<?= KORENSKI_URL ?>/prijava.php">Prijavite se</a>
+                    </p>
+                    <p class="text-center text-muted small mt-3 mb-0">
+                        Simulacija sa virtuelnim novcem — registracija je dozvoljena od
+                        <?= MIN_GODINA_ZA_REGISTRACIJU ?> godina.
                     </p>
                 </div>
             </div>

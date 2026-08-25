@@ -134,7 +134,7 @@ $naslov_stranice = 'Profil';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Profil</h1>
+<h1 class="mb-4">Profil</h1>
 
 <?php prikazi_poruke(); ?>
 
@@ -142,7 +142,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     <div class="col-lg-6">
         <div class="card shadow-sm mb-4">
             <div class="card-body">
-                <h2 class="h5 mb-3">Podaci profila</h2>
+                <h2 class="mb-3">Podaci profila</h2>
                 <form method="post" novalidate id="forma-profil-podaci">
                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
                     <input type="hidden" name="akcija" value="podaci">
@@ -184,7 +184,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
 
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3">Promena lozinke</h2>
+                <h2 class="mb-3">Promena lozinke</h2>
                 <form method="post" novalidate id="forma-profil-lozinka">
                     <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
                     <input type="hidden" name="akcija" value="lozinka">
@@ -212,7 +212,15 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
     <div class="col-lg-6">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3">Verifikacija naloga</h2>
+                <h2 class="mb-3">
+                    Verifikacija naloga
+                    <?php // Status poslednjeg dokumenta stoji uz naslov, istim rečnikom kao kod operatera ?>
+                    <?php if ($korisnik['verifikovan']): ?>
+                        <span class="status status-odobren ms-1">verifikovan</span>
+                    <?php elseif ($poslednji_dokument): ?>
+                        <span class="status status-<?= bezbedno($poslednji_dokument['status']) ?> ms-1"><?= bezbedno($poslednji_dokument['status']) ?></span>
+                    <?php endif; ?>
+                </h2>
 
                 <?php if ($korisnik['verifikovan']): ?>
                     <div class="alert alert-success mb-0">Vaš nalog je verifikovan.</div>

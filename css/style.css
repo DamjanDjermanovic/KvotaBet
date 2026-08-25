@@ -1,20 +1,791 @@
-/* Sopstveni stilovi projekta - Bootstrap 5 dolazi preko CDN-a i pokriva
-   veliku većinu izgleda, ovde su samo sitna doterivanja. */
+/* =====================================================================
+   KLADIONICA — vizuelni identitet
+   Osnovna paleta: četiri plava tona (Prussian → Cornflower).
+   Dopuna: hladni neutrali izvedeni iz iste plave + tri semantičke boje
+   za ishode tiketa, jer se dobitak i gubitak ne mogu razlikovati
+   nijansama iste boje.
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap');
+
+:root {
+    /* --- osnovna paleta --- */
+    --mornar-900: #00072d;   /* prussian blue  — najdublja pozadina */
+    --mornar-800: #001c55;   /* deep navy      — navigacija, panel tiketa */
+    --mornar-700: #0a2472;   /* imperial blue  — naslovi sekcija */
+    --plava-500:  #0e6ba8;   /* cornflower     — akcenat, linkovi, akcije */
+    --plava-400:  #1a86cc;   /* svetliji akcenat za hover */
+
+    /* --- neutrali (hladni, izvedeni iz plave) --- */
+    --papir:      #f2f5fa;   /* pozadina strane */
+    --karta:      #ffffff;
+    --ivica:      #dde3ef;
+    --ivica-jaka: #c3cddf;
+    --tekst:      #131c33;
+    --prigusen:   #5c6883;
+
+    /* --- semantičke boje ishoda --- */
+    --dobitak:    #0d8a5c;
+    --dobitak-bg: #e6f5ee;
+    --gubitak:    #b3261e;
+    --gubitak-bg: #fbeae8;
+    --ceka:       #b57608;
+    --ceka-bg:    #fdf3e0;
+
+    /* --- identitetski gradijent (sva četiri tona palete) --- */
+    --traka: linear-gradient(90deg, var(--mornar-900), var(--mornar-800), var(--mornar-700), var(--plava-500));
+    --traka-kosa: linear-gradient(135deg, var(--mornar-800), var(--plava-500));
+
+    /* --- ostalo --- */
+    --radijus:    10px;
+    --radijus-sm: 6px;
+    --senka:      0 1px 2px rgba(0, 7, 45, .06), 0 4px 16px rgba(0, 7, 45, .06);
+    --senka-jaka: 0 8px 28px rgba(0, 7, 45, .16);
+
+    /* Bootstrap prima ove promenljive direktno */
+    --bs-primary: var(--plava-500);
+    --bs-body-color: var(--tekst);
+    --bs-body-font-family: 'Barlow', system-ui, sans-serif;
+    --bs-link-color: var(--plava-500);
+    --bs-link-hover-color: var(--mornar-700);
+}
+
+/* =====================================================================
+   OSNOVA I TIPOGRAFIJA
+   Barlow Condensed nosi naslove i navigaciju — uski, sportski rez kakav
+   se koristi na semaforima i rasporedima utakmica.
+   Barlow (isti superfamily) nosi tekst, pa se dva reza ne svađaju.
+   ===================================================================== */
 
 body {
-    min-height: 100vh;
+    background: var(--papir);
+    color: var(--tekst);
+    font-family: 'Barlow', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
 }
+
+h1, h2, h3, h4, h5, h6,
+.naslov {
+    font-family: 'Barlow Condensed', 'Barlow', sans-serif;
+    font-weight: 600;
+    letter-spacing: .01em;
+    color: var(--mornar-800);
+}
+
+h1 { font-size: 2.1rem; }
+h2 { font-size: 1.65rem; }
+h3 { font-size: 1.3rem; }
+
+/* Nadnaslov iznad sekcije — nosi vrstu sadržaja, ne ukras */
+.eyebrow {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .82rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--plava-500);
+    display: block;
+    margin-bottom: .15rem;
+}
+
+/* Svi brojevi u sistemu — kvote, iznosi, rezultati — moraju biti
+   jednake širine da se kolone poravnaju */
+.broj, .kvota-vrednost, .iznos, td.broj, .stanje-iznos {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+}
+
+/* =====================================================================
+   NAVIGACIJA
+   ===================================================================== */
+
+.navbar {
+    background: var(--mornar-900) !important;
+    padding: .55rem 0;
+    position: relative;
+}
+
+/* Gradijentna traka kroz sva četiri tona palete — potpis koji se
+   ponavlja na navigaciji, podnožju i statističkim karticama */
+.navbar::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px;
+    background: var(--traka);
+}
+
+.navbar-brand {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #fff !important;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.navbar-brand i { color: var(--plava-400); }
+
+.navbar .nav-link {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.02rem;
+    font-weight: 500;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, .72) !important;
+    padding: .4rem .85rem !important;
+    border-radius: var(--radijus-sm);
+    transition: color .15s, background-color .15s;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus-visible {
+    color: #fff !important;
+    background: rgba(255, 255, 255, .08);
+}
+
+/* Aktivna stranica — tanka crta ispod, ne pun blok */
+.navbar .nav-link.active {
+    color: #fff !important;
+    box-shadow: inset 0 -2px 0 var(--plava-400);
+}
+
+/* Stanje računa u navigaciji */
+.nav-stanje {
+    font-variant-numeric: tabular-nums;
+    background: rgba(14, 107, 168, .22);
+    border: 1px solid rgba(26, 134, 204, .4);
+    color: #fff;
+    padding: .3rem .7rem;
+    border-radius: var(--radijus-sm);
+    font-weight: 600;
+    font-size: .95rem;
+}
+
+.dropdown-menu {
+    border: 1px solid var(--ivica);
+    border-radius: var(--radijus);
+    box-shadow: var(--senka-jaka);
+    padding: .35rem;
+}
+
+.dropdown-item { border-radius: var(--radijus-sm); padding: .45rem .7rem; }
+.dropdown-item:hover { background: var(--papir); color: var(--mornar-800); }
+
+/* =====================================================================
+   KARTICE I SEKCIJE
+   ===================================================================== */
 
 .card {
-    border: none;
-    border-radius: 0.75rem;
+    background: var(--karta);
+    border: 1px solid var(--ivica);
+    border-radius: var(--radijus);
+    box-shadow: var(--senka);
 }
 
-/* Na širim ekranima panel tiketa prati skrolovanje ponude, da igrač ne mora
-   da se vraća na vrh strane posle svakog dodatog para */
-@media (min-width: 992px) {
-    .tiket-panel {
-        position: sticky;
-        top: 1rem;
+.card-header {
+    background: var(--karta);
+    border-bottom: 1px solid var(--ivica);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 1.12rem;
+    letter-spacing: .03em;
+    color: var(--mornar-800);
+    padding: .7rem 1rem;
+}
+
+/* Zaglavlje lige u ponudi — tanka traka, ne velika kartica */
+.liga-zaglavlje {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    background: var(--traka-kosa);
+    color: #fff;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: .45rem .8rem;
+    border-radius: var(--radijus-sm) var(--radijus-sm) 0 0;
+    font-size: .98rem;
+}
+
+.liga-zaglavlje .drzava {
+    margin-left: auto;
+    font-weight: 500;
+    font-size: .85rem;
+    color: rgba(255, 255, 255, .6);
+    letter-spacing: .08em;
+}
+
+/* =====================================================================
+   RED DOGAĐAJA
+   ===================================================================== */
+
+.dogadjaj-red {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--karta);
+    border: 1px solid var(--ivica);
+    border-top: 0;
+    padding: .7rem .9rem;
+    transition: background-color .15s;
+}
+
+.dogadjaj-red:first-of-type { border-top: 1px solid var(--ivica); }
+.dogadjaj-red:last-child { border-radius: 0 0 var(--radijus) var(--radijus); }
+.dogadjaj-red:hover { background: #fafbfe; }
+
+.dogadjaj-vreme {
+    font-variant-numeric: tabular-nums;
+    font-size: .85rem;
+    color: var(--prigusen);
+    min-width: 5.5rem;
+    line-height: 1.25;
+}
+
+.dogadjaj-vreme .dan {
+    display: block;
+    font-family: 'Barlow Condensed', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-size: .78rem;
+    color: var(--plava-500);
+}
+
+.dogadjaj-timovi { flex: 1; min-width: 0; font-weight: 500; }
+.dogadjaj-timovi .tim { display: block; }
+.dogadjaj-timovi .protiv {
+    font-size: .75rem;
+    color: var(--prigusen);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+/* =====================================================================
+   KVOTA — potpis celog interfejsa
+   Dugme za kvotu je najmanja jedinica sistema: ono je jedini put od
+   ponude do tiketa. Zato je oblikovano kao ćelija sa semafora — brojevi
+   jednake širine, uska forma, jasno stanje "izabrano".
+   ===================================================================== */
+
+.kvote-grupa { display: flex; gap: .35rem; flex-wrap: wrap; }
+
+.kvota {
+    --kvota-bg: var(--karta);
+    --kvota-boja: var(--mornar-800);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 4.2rem;
+    padding: .35rem .5rem;
+    background: var(--kvota-bg);
+    color: var(--kvota-boja);
+    border: 1px solid var(--ivica-jaka);
+    border-radius: var(--radijus-sm);
+    cursor: pointer;
+    transition: transform .12s, background-color .15s, border-color .15s, color .15s;
+    line-height: 1.15;
+}
+
+.kvota .oznaka {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .74rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--prigusen);
+    transition: color .15s;
+}
+
+.kvota .kvota-vrednost {
+    font-size: 1.06rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.kvota:hover {
+    border-color: var(--plava-500);
+    background: #f0f7fc;
+    transform: translateY(-1px);
+}
+
+/* Izabrana kvota — puni akcenat, bez pomeranja, deluje "utisnuto" */
+.kvota.izabrana {
+    --kvota-bg: var(--plava-500);
+    --kvota-boja: #fff;
+    border-color: var(--mornar-700);
+    transform: none;
+    box-shadow: inset 0 2px 6px rgba(0, 7, 45, .28);
+}
+
+.kvota.izabrana .oznaka { color: rgba(255, 255, 255, .8); }
+
+.kvota:disabled,
+.kvota.nedostupna {
+    opacity: .45;
+    cursor: not-allowed;
+    background: var(--papir);
+}
+
+.kvota:focus-visible {
+    outline: 2px solid var(--plava-400);
+    outline-offset: 2px;
+}
+
+/* Kratko treperenje kad se kvota promeni — pažnja bez buke */
+@keyframes kvota-promena {
+    0%   { background: #fff6d9; }
+    100% { background: var(--kvota-bg); }
+}
+.kvota.promenjena { animation: kvota-promena 1.2s ease-out; }
+
+/* =====================================================================
+   PANEL TIKETA
+   Oblikovan kao papirni listić: tamna glava, nazubljena ivica i
+   isprekidana crta iznad zbira. Jedini ukras u celom interfejsu,
+   i jedini koji dolazi iz sveta kladionice.
+   ===================================================================== */
+
+.tiket-panel {
+    position: sticky;
+    top: 1rem;
+    background: var(--karta);
+    border: 1px solid var(--ivica);
+    border-radius: var(--radijus);
+    box-shadow: var(--senka);
+    overflow: hidden;
+}
+
+.tiket-glava {
+    background: var(--mornar-800);
+    color: #fff;
+    padding: .7rem .9rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.tiket-glava .broj-parova {
+    margin-left: auto;
+    background: var(--plava-500);
+    border-radius: 999px;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Nazubljena ivica ispod glave — otcepljeni listić */
+.tiket-zub {
+    height: 7px;
+    background:
+        radial-gradient(circle at 5px 0, transparent 5px, var(--mornar-800) 5px)
+        repeat-x;
+    background-size: 10px 7px;
+    transform: scaleY(-1);
+}
+
+.tiket-stavka {
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+    padding: .6rem .9rem;
+    border-bottom: 1px dashed var(--ivica);
+    font-size: .92rem;
+}
+
+.tiket-stavka .par { flex: 1; min-width: 0; }
+.tiket-stavka .par .mec { font-weight: 500; }
+.tiket-stavka .par .tip {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .82rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--plava-500);
+}
+
+.tiket-stavka .kvota-vrednost { font-weight: 700; }
+
+.tiket-ukloni {
+    background: none;
+    border: 0;
+    color: var(--prigusen);
+    padding: 0 .2rem;
+    line-height: 1;
+    border-radius: var(--radijus-sm);
+}
+.tiket-ukloni:hover { color: var(--gubitak); }
+
+/* Zbir — odvojen isprekidanom crtom kao na pravom listiću */
+.tiket-zbir {
+    padding: .75rem .9rem;
+    background: var(--papir);
+    border-top: 2px dashed var(--ivica-jaka);
+}
+
+.tiket-zbir .red {
+    display: flex;
+    justify-content: space-between;
+    font-size: .92rem;
+    padding: .15rem 0;
+    color: var(--prigusen);
+}
+
+.tiket-zbir .red .vrednost {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--tekst);
+}
+
+.tiket-zbir .red.dobitak-red {
+    font-size: 1.05rem;
+    padding-top: .45rem;
+    margin-top: .3rem;
+    border-top: 1px solid var(--ivica-jaka);
+    color: var(--mornar-800);
+    font-weight: 600;
+}
+
+.tiket-zbir .red.dobitak-red .vrednost { color: var(--plava-500); font-size: 1.18rem; }
+
+.tiket-prazan {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--prigusen);
+    font-size: .93rem;
+}
+.tiket-prazan i { font-size: 1.8rem; color: var(--ivica-jaka); display: block; margin-bottom: .4rem; }
+
+/* =====================================================================
+   DUGMAD
+   ===================================================================== */
+
+.btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    border-radius: var(--radijus-sm);
+    padding: .48rem 1.1rem;
+    transition: background-color .15s, border-color .15s, transform .1s;
+}
+
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+    background: var(--plava-500);
+    border-color: var(--plava-500);
+}
+.btn-primary:hover,
+.btn-primary:focus {
+    background: var(--mornar-700);
+    border-color: var(--mornar-700);
+}
+
+.btn-outline-primary { color: var(--plava-500); border-color: var(--ivica-jaka); }
+.btn-outline-primary:hover { background: var(--plava-500); border-color: var(--plava-500); }
+
+/* Glavno dugme sistema — nosi kosi gradijent palete */
+.btn-uplati {
+    width: 100%;
+    background: var(--traka-kosa);
+    border: 0;
+    color: #fff;
+    font-size: 1.05rem;
+    letter-spacing: .08em;
+    padding: .62rem 1rem;
+    box-shadow: 0 2px 10px rgba(10, 36, 114, .3);
+}
+.btn-uplati:hover {
+    background: var(--mornar-800);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(10, 36, 114, .38);
+}
+.btn-uplati:disabled {
+    background: var(--ivica-jaka);
+    color: #fff;
+    box-shadow: none;
+}
+
+.btn:focus-visible { outline: 2px solid var(--plava-400); outline-offset: 2px; }
+
+/* =====================================================================
+   STATUSI — JEDINO mesto gde se koriste zelena i crvena.
+   Van ovog bloka boja dolazi isključivo iz plave palete. Zelena znači
+   "dobitak", crvena "gubitak" i ništa drugo; da su iste boje upotrebljene
+   i za dugmad ili naslove, ta poruka bi izgubila snagu.
+   ===================================================================== */
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .82rem;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    padding: .18rem .55rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+}
+
+.status-aktivan    { background: var(--ceka-bg);    color: var(--ceka);    border-color: #f0dcb4; }
+.status-dobitan    { background: var(--dobitak-bg); color: var(--dobitak); border-color: #b8e0cd; }
+.status-gubitan    { background: var(--gubitak-bg); color: var(--gubitak); border-color: #f0c5c1; }
+.status-storniran  { background: var(--papir);      color: var(--prigusen); border-color: var(--ivica-jaka); }
+
+/* Statusi stavki i naloga koriste isti rečnik boja */
+.status-ceka      { background: var(--ceka-bg);    color: var(--ceka); }
+.status-pogodjen  { background: var(--dobitak-bg); color: var(--dobitak); }
+.status-promasen  { background: var(--gubitak-bg); color: var(--gubitak); }
+.status-blokiran  { background: var(--gubitak-bg); color: var(--gubitak); }
+.status-odobren   { background: var(--dobitak-bg); color: var(--dobitak); }
+.status-odbijen   { background: var(--gubitak-bg); color: var(--gubitak); }
+.status-na_cekanju{ background: var(--ceka-bg);    color: var(--ceka); }
+
+/* Statusi događaja. Zelena i crvena ovde ne dolaze u obzir - događaj sam po
+   sebi nije ni dobitak ni gubitak. Razlikuju se plavom (u ponudi, prima se
+   tiket), žutom (počeo, čeka se rezultat) i neutralnom (obrađen); otkazan
+   nosi isprekidanu ivicu, pa se od završenog razlikuje i bez oslanjanja na
+   boju. */
+.status-najavljen { background: rgba(14, 107, 168, .10); color: var(--plava-500);  border-color: rgba(14, 107, 168, .28); }
+.status-u_toku    { background: var(--ceka-bg);          color: var(--ceka);       border-color: #f0dcb4; }
+.status-zavrsen   { background: var(--papir);            color: var(--mornar-700); border-color: var(--ivica-jaka); }
+.status-otkazan   { background: var(--papir);            color: var(--prigusen);   border-color: var(--ivica-jaka); border-style: dashed; }
+
+/* Iznos u istoriji transakcija — smer se vidi bojom i znakom */
+.iznos-plus  { color: var(--dobitak); font-weight: 600; font-variant-numeric: tabular-nums; }
+.iznos-minus { color: var(--gubitak); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* =====================================================================
+   TABELE (admin i operater)
+   ===================================================================== */
+
+.table {
+    --bs-table-bg: var(--karta);
+    border-color: var(--ivica);
+    font-size: .94rem;
+}
+
+.table > thead th {
+    background: var(--mornar-800);
+    color: #fff;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    font-size: .86rem;
+    border-bottom: 0;
+    padding: .55rem .7rem;
+    white-space: nowrap;
+}
+
+.table > tbody td { padding: .55rem .7rem; vertical-align: middle; }
+.table > tbody tr:hover { background: #f7f9fd; }
+.table td.broj, .table td.iznos { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* =====================================================================
+   FORME
+   ===================================================================== */
+
+.form-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    font-size: .87rem;
+    color: var(--mornar-700);
+    margin-bottom: .25rem;
+}
+
+.form-control, .form-select {
+    border: 1px solid var(--ivica-jaka);
+    border-radius: var(--radijus-sm);
+    padding: .5rem .7rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--plava-500);
+    box-shadow: 0 0 0 3px rgba(14, 107, 168, .16);
+}
+
+.form-control.is-invalid { border-color: var(--gubitak); }
+.invalid-feedback { color: var(--gubitak); font-size: .85rem; }
+
+/* Padajući meniji u filteru ponude. Pregledač im širinu računa po najdužoj
+   stavci, pa je meni sporta ("Fudbal", "Tenis") ispadao osetno uži od menija
+   lige i sekao duže nazive. Zajednička donja granica ih izjednačava. */
+.filter-izbor { min-width: 13rem; }
+
+/* Kartica za prijavu i registraciju */
+.auth-karta {
+    max-width: 26rem;
+    margin: 3rem auto;
+    border-top: 3px solid transparent;
+    border-image: var(--traka) 1;
+}
+
+/* =====================================================================
+   PORUKE
+   ===================================================================== */
+
+.alert {
+    border: 1px solid transparent;
+    border-left-width: 3px;
+    border-radius: var(--radijus-sm);
+    font-size: .94rem;
+    padding: .7rem .9rem;
+}
+
+.alert-success { background: var(--dobitak-bg); border-color: var(--dobitak); color: #0a5c3e; }
+.alert-danger  { background: var(--gubitak-bg); border-color: var(--gubitak); color: #8a1c16; }
+.alert-warning { background: var(--ceka-bg);    border-color: var(--ceka);    color: #7d5206; }
+.alert-info    { background: #e7f1f9;           border-color: var(--plava-500); color: var(--mornar-700); }
+
+/* =====================================================================
+   STATISTIKA (admin)
+   ===================================================================== */
+
+.stat-karta {
+    background: var(--karta);
+    border: 1px solid var(--ivica);
+    border-radius: var(--radijus);
+    padding: .9rem 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-karta::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 3px;
+    background: var(--traka);
+}
+
+.stat-karta .broj {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--mornar-800);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-karta .opis {
+    font-size: .82rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--prigusen);
+}
+
+/* Log — jedino mesto sa monospace fontom, jer su redovi poravnati */
+.log-ispis {
+    background: var(--mornar-900);
+    color: #c8d4e8;
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: .82rem;
+    line-height: 1.5;
+    padding: .8rem;
+    border-radius: var(--radijus-sm);
+    max-height: 32rem;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* =====================================================================
+   PODNOŽJE
+   ===================================================================== */
+
+.podnozje {
+    background: var(--mornar-900);
+    color: rgba(255, 255, 255, .55);
+    padding: 1.6rem 0;
+    margin-top: 3rem;
+    font-size: .88rem;
+    border-top: 3px solid transparent;
+    border-image: var(--traka) 1;
+}
+
+.podnozje a { color: rgba(255, 255, 255, .78); text-decoration: none; }
+.podnozje a:hover { color: #fff; text-decoration: underline; }
+
+.podnozje .napomena {
+    font-size: .8rem;
+    color: rgba(255, 255, 255, .38);
+    margin-top: .5rem;
+}
+
+/* =====================================================================
+   PRAZNA STANJA — poziv na akciju, ne samo obaveštenje
+   ===================================================================== */
+
+.prazno {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--prigusen);
+}
+.prazno i { font-size: 2.4rem; color: var(--ivica-jaka); display: block; margin-bottom: .6rem; }
+.prazno .naslov-praznog { font-family: 'Barlow Condensed', sans-serif; font-size: 1.15rem; color: var(--mornar-800); }
+
+/* =====================================================================
+   RESPONZIVNOST I PRISTUPAČNOST
+   ===================================================================== */
+
+@media (max-width: 991px) {
+    .tiket-panel { position: static; margin-top: 1.5rem; }
+}
+
+@media (max-width: 575px) {
+    .dogadjaj-red { flex-wrap: wrap; gap: .5rem; }
+    .dogadjaj-vreme { min-width: 100%; }
+    .kvote-grupa { width: 100%; }
+    .kvota { flex: 1; min-width: 3.4rem; }
+    h1 { font-size: 1.7rem; }
+    .table { font-size: .88rem; }
+}
+
+/* Poštovanje sistemskog podešavanja za smanjeno kretanje */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
     }
+}
+
+/* Preskoči na sadržaj — vidljivo tek pri tabulaciji */
+.preskoci {
+    position: absolute;
+    left: -999px;
+    top: .5rem;
+    background: var(--plava-500);
+    color: #fff;
+    padding: .5rem .9rem;
+    border-radius: var(--radijus-sm);
+    z-index: 1080;
+}
+.preskoci:focus { left: .5rem; }
+
+/* Štampa — profesor može da odštampa tiket ili izveštaj */
+@media print {
+    .navbar, .podnozje, .tiket-panel, .btn { display: none !important; }
+    body { background: #fff; }
+    .card { box-shadow: none; border: 1px solid #999; }
 }

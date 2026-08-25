@@ -42,26 +42,23 @@ try {
     upisi_gresku('Greška pri učitavanju istorije tiketa: ' . $e->getMessage());
 }
 
-// Boja bedža statusa tiketa/stavke - ista paleta za oba nivoa
-function boja_statusa(string $status): string
-{
-    return match ($status) {
-        'dobitan', 'pogodjen' => 'success',
-        'gubitan', 'promasen' => 'danger',
-        'storniran' => 'secondary',
-        'ceka' => 'secondary',
-        default => 'primary', // aktivan
-    };
-}
+// Napomena: boju statusa više ne bira PHP. Stil je nosi klasa .status-<vrednost>
+// u css/style.css, pa su prikaz tiketa, stavke, naloga i dokumenta usklađeni
+// jednim mestom umesto po jednom funkcijom u svakom fajlu.
 
 $naslov_stranice = 'Moji tiketi';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="h3 mb-4">Moji tiketi</h1>
+<h1 class="mb-4">Moji tiketi</h1>
 
 <?php if (empty($tiketi)): ?>
-    <div class="alert alert-info">Još uvek niste uplatili nijedan tiket.</div>
+    <div class="prazno">
+        <i class="bi bi-receipt-cutoff" aria-hidden="true"></i>
+        <div class="naslov-praznog">Još nemate nijedan tiket</div>
+        <p class="mb-3">Izaberite kvote u ponudi i uplatite prvi tiket.</p>
+        <a href="<?= KORENSKI_URL ?>/index.php" class="btn btn-primary btn-sm">Otvori ponudu</a>
+    </div>
 <?php else: ?>
     <?php foreach ($tiketi as $tiket): ?>
         <div class="card mb-3">
@@ -70,26 +67,26 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                     <strong><?= bezbedno($tiket['broj_tiketa']) ?></strong>
                     <span class="text-muted small ms-2"><?= bezbedno(formatiraj_datum_vreme($tiket['datum_uplate'])) ?></span>
                 </div>
-                <span class="badge text-bg-<?= boja_statusa($tiket['status']) ?> text-uppercase"><?= bezbedno($tiket['status']) ?></span>
+                <span class="status status-<?= bezbedno($tiket['status']) ?>"><?= bezbedno($tiket['status']) ?></span>
             </div>
             <div class="card-body">
                 <div class="row text-center mb-3">
                     <div class="col-4">
-                        <div class="text-muted small">Ulog</div>
-                        <div class="fw-semibold"><?= bezbedno(formatiraj_novac($tiket['ulog'])) ?></div>
+                        <div class="eyebrow">Ulog</div>
+                        <div class="fw-semibold iznos"><?= bezbedno(formatiraj_novac($tiket['ulog'])) ?></div>
                     </div>
                     <div class="col-4">
-                        <div class="text-muted small">Ukupna kvota</div>
-                        <div class="fw-semibold"><?= number_format((float) $tiket['ukupna_kvota'], 2) ?></div>
+                        <div class="eyebrow">Ukupna kvota</div>
+                        <div class="fw-semibold broj"><?= number_format((float) $tiket['ukupna_kvota'], 2) ?></div>
                     </div>
                     <div class="col-4">
-                        <div class="text-muted small">Potencijalni dobitak</div>
-                        <div class="fw-semibold"><?= bezbedno(formatiraj_novac($tiket['potencijalni_dobitak'])) ?></div>
+                        <div class="eyebrow">Potencijalni dobitak</div>
+                        <div class="fw-semibold iznos"><?= bezbedno(formatiraj_novac($tiket['potencijalni_dobitak'])) ?></div>
                     </div>
                 </div>
 
                 <?php if ((float) $tiket['isplaceno'] > 0): ?>
-                    <p class="text-success small mb-3">Isplaćeno: <?= bezbedno(formatiraj_novac($tiket['isplaceno'])) ?></p>
+                    <p class="small mb-3">Isplaćeno: <span class="iznos-plus">+<?= bezbedno(formatiraj_novac($tiket['isplaceno'])) ?></span></p>
                 <?php endif; ?>
 
                 <button class="btn btn-outline-secondary btn-sm" type="button"
@@ -108,8 +105,9 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <span class="badge text-bg-primary"><?= bezbedno($stavka['oznaka']) ?> <?= number_format((float) $stavka['kvota_vrednost'], 2) ?></span>
-                                    <span class="badge text-bg-<?= boja_statusa($stavka['stavka_status']) ?>"><?= bezbedno($stavka['stavka_status']) ?></span>
+                                    <?php // Kvota je snimljena u trenutku uplate, pa se ne menja ni ako je operater kasnije izmeni ?>
+                                    <span class="kvota-vrednost fw-semibold"><?= bezbedno($stavka['oznaka']) ?> <?= number_format((float) $stavka['kvota_vrednost'], 2) ?></span>
+                                    <span class="status status-<?= bezbedno($stavka['stavka_status']) ?>"><?= bezbedno($stavka['stavka_status']) ?></span>
                                 </div>
                             </li>
                         <?php endforeach; ?>
