@@ -161,4 +161,30 @@ function primeni_zapamti_me(): void
     }
 }
 
+// Ako je admin blokirao nalog dok je vlasnik već bio prijavljen, sama sesija
+// to ne primeti - zahtevaj_ulogu() čita samo podatke upisane u sesiju pri
+// prijavi, ne upituje bazu. Zato se status proverava iznova na svakom
+// zahtevu; čim naloga više nema ili nije aktivan, sesija se odmah prekida.
+function proveri_da_li_je_nalog_i_dalje_aktivan(): void
+{
+    if (!korisnik_prijavljen()) {
+        return;
+    }
+
+    try {
+        $pdo = konektuj_bazu();
+        $upit = $pdo->prepare('SELECT status FROM korisnik WHERE id = ?');
+        $upit->execute([(int) $_SESSION['korisnik_id']]);
+        $status = $upit->fetchColumn();
+
+        if ($status !== 'aktivan') {
+            odjavi_korisnika();
+            preusmeri(KORENSKI_URL . '/prijava.php?blokiran=1');
+        }
+    } catch (PDOException $e) {
+        upisi_gresku('Greška pri proveri statusa naloga: ' . $e->getMessage());
+    }
+}
+
 primeni_zapamti_me();
+proveri_da_li_je_nalog_i_dalje_aktivan();

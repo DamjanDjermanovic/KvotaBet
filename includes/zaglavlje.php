@@ -11,8 +11,10 @@ require_once __DIR__ . '/autentifikacija.php';
 $naslov_stranice = $naslov_stranice ?? 'Kladionica';
 
 // Evidentira se svaki pristup stranici - i gosta i prijavljenog korisnika -
-// u tekstualni log fajl, kao osnova za statistiku pristupa u admin panelu
+// i u tekstualni log fajl i u tabelu pristup_log, kao osnova za statistiku
+// pristupa u admin panelu
 upisi_pristup($_SERVER['REQUEST_URI'] ?? '', $_SESSION['korisnicko_ime'] ?? null);
+evidentiraj_pristup_u_bazi(konektuj_bazu(), $_SESSION['korisnik_id'] ?? null, $_SERVER['REQUEST_URI'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="sr">
@@ -39,14 +41,18 @@ upisi_pristup($_SERVER['REQUEST_URI'] ?? '', $_SESSION['korisnicko_ime'] ?? null
                 <?php if (trenutna_uloga() === 'igrac'): ?>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/igrac/uplata.php">Uplata sredstava</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/igrac/tiketi.php">Moji tiketi</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/igrac/transakcije.php">Transakcije</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/igrac/profil.php">Profil</a></li>
                 <?php elseif (trenutna_uloga() === 'operater'): ?>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/sportovi.php">Sportovi i lige</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/sportovi.php">Sportovi</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/lige.php">Lige</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/timovi.php">Timovi</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/dogadjaji.php">Događaji i kvote</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/dokumenta.php">Dokumenta</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/tiketi.php">Tiketi</a></li>
                 <?php elseif (trenutna_uloga() === 'admin'): ?>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/korisnici.php">Korisnici</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/uloge.php">Uloge</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/operater/dokumenta.php">Dokumenta</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/logovi.php">Logovi</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= KORENSKI_URL ?>/admin/statistika.php">Statistika</a></li>
                 <?php endif; ?>
