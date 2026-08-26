@@ -267,7 +267,7 @@ try {
 }
 
 $csrf_token = generisi_csrf_token();
-$naslov_stranice = 'Transakcije';
+$naslov_stranice = 'Sve transakcije';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 

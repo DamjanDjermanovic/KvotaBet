@@ -3,6 +3,9 @@
 // a opciono postavlja kolačić "zapamti me" za automatsku prijavu ubuduće.
 
 require_once __DIR__ . '/includes/autentifikacija.php';
+// Ova stranica ima sopstveni <html> (ne prolazi kroz zaglavlje.php), pa sama
+// uključuje zajednički <head> i izbor teme
+require_once __DIR__ . '/includes/glava.php';
 
 if (korisnik_prijavljen()) {
     preusmeri(KORENSKI_URL . '/index.php');
@@ -61,14 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $csrf_token = generisi_csrf_token();
 ?>
 <!DOCTYPE html>
-<html lang="sr">
+<html lang="sr"<?= atributi_teme() ?>>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Prijava — Kladionica</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="<?= KORENSKI_URL ?>/css/style.css" rel="stylesheet">
+    <?php ispisi_glavu('Prijava', 'Prijava na nalog kladionice.'); ?>
 </head>
 <body>
 <div class="container">

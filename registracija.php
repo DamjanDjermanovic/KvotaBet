@@ -5,6 +5,9 @@
 
 require_once __DIR__ . '/includes/autentifikacija.php';
 require_once __DIR__ . '/includes/validacija.php';
+// Sopstveni <html> (ne prolazi kroz zaglavlje.php), pa sama uključuje
+// zajednički <head> i izbor teme
+require_once __DIR__ . '/includes/glava.php';
 
 // Već prijavljen korisnik nema šta da traži na registraciji
 if (korisnik_prijavljen()) {
@@ -103,14 +106,9 @@ $csrf_token = generisi_csrf_token();
 $max_datum_rodjenja = date('Y-m-d', strtotime('-' . MIN_GODINA_ZA_REGISTRACIJU . ' years'));
 ?>
 <!DOCTYPE html>
-<html lang="sr">
+<html lang="sr"<?= atributi_teme() ?>>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Registracija — Kladionica</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="<?= KORENSKI_URL ?>/css/style.css" rel="stylesheet">
+    <?php ispisi_glavu('Registracija', 'Otvaranje naloga za klađenje virtuelnim novcem. Dozvoljeno od 18 godina.'); ?>
 </head>
 <body>
 <div class="container">

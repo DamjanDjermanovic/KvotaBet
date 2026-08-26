@@ -281,7 +281,7 @@ try {
 // iz css/style.css, ista na svim stranicama koje prikazuju status.
 
 $csrf_token = generisi_csrf_token();
-$naslov_stranice = 'Tiketi';
+$naslov_stranice = 'Svi tiketi';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 

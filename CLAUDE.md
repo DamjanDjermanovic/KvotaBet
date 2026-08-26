@@ -48,7 +48,7 @@ Ovih 11 stavki se ocenjuje. Prati status ovde i ažuriraj kad se nešto završi.
 
 | Stavka | Rešenje u ovom projektu |
 |---|---|
-| Kolačići | "Zapamti me" na prijavi + čuvanje izabrane lige u ponudi |
+| Kolačići | Tri slučaja: "zapamti me" na prijavi, čuvanje izabrane lige u ponudi i **izbor teme** (svetla/tamna, `includes/tema.php`, trajanje godinu dana, `SameSite=Lax`). Kolačić teme PHP čita u `zaglavlje.php` i upisuje `data-tema` na `<html>` pre iscrtavanja; kad ga nema, temu bira sistemsko podešavanje kroz `prefers-color-scheme`. |
 | Sesije | Prijava, uloga korisnika, tiket u izradi (korpa) |
 | AJAX | Dodavanje para na tiket, živi proračun kvote i dobitka, provera zauzetosti emaila pri registraciji, pretraga ponude |
 | Upload | Verifikacioni dokument igrača (lična karta kao JPG/PNG/PDF) |
@@ -87,6 +87,8 @@ kladionica/
 │   ├── log.php               upis i čitanje tekstualnih log fajlova
 │   ├── odds_api.php          poziv spoljnog servisa sa kvotama + keširanje
 │   ├── uvoz.php              pretvaranje odgovora servisa u našu šemu, upis
+│   ├── tema.php              svetla/tamna tema: kolačić, atributi na <html>
+│   ├── glava.php             zajednički <head>: naslov, ikonice, Open Graph
 │   ├── zaglavlje.php         HTML head, navigacija (menja se prema ulozi)
 │   └── podnozje.php          footer, zatvaranje tagova, JS skripte
 ├── ajax/                     endpointi koji vraćaju JSON
@@ -100,8 +102,19 @@ kladionica/
 ├── logovi/                   pristup.log, greske.log
 ├── baza/                     schema.sql, test_podaci.sql, migracija_api.sql
 ├── dokumentacija/            materijal za Word dokumentaciju
+├── favicon.svg               ikonica kartice (bi-ticket-perforated)
+├── favicon.ico               ista ikonica, 32x32, puna pozadina
+├── apple-touch-icon.png      ista ikonica, 180x180, za iOS
+├── og-slika.png              1200x630, prikaz kad se link nalepi negde
+├── tema.php                  prima izbor teme sa prekidača i pamti ga
 └── index.php                 početna strana sa ponudom
 ```
+
+**Boje i teme.** `css/style.css` je podeljen na paletu (tonovi marke, isti u
+obe teme) i uloge (`--naslov`, `--akcenat`, `--povrsina-mornar`…). Pravila
+koriste isključivo uloge; tema menja samo vrednosti uloga. Novi ton se dodaje
+u paletu, nikad direktno u pravilo. Svaki par slovo/podloga mora imati
+najmanje **4.5:1** kontrasta u **obe** teme, i to izmereno, ne procenjeno.
 
 **Uvoz sa spoljnog servisa je pomoćni alat, ne oslonac.** Ručni unos ponude mora
 raditi bez interneta, bez ključa i sa praznom tabelom `api_liga`. Nijedna stranica

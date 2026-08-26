@@ -1057,3 +1057,315 @@ Baza je proverena u oba smera: potpuno svež `schema.sql` (14 tabela) i
 Po završetku obrisano: privremeni operaterski nalog, uvezeni i ručno uneti
 probni događaji, novonapravljeni tim, sva mapiranja, sve `api_naziv` vrednosti i
 keš fajlovi. U bazi su ostala zatečena 3 naloga, 12 događaja i 24 tima.
+
+---
+
+## Ikonice, tamna tema i doterivanje izgleda (2026-08-26)
+
+### 1. Ikonice i oznake za deljenje
+
+- `favicon.svg` — glif `bi-ticket-perforated` prepisan iz Bootstrap Icons
+  1.11.3 (isti crtež koji nosi `.navbar-brand`), obojen u `--plava-500`, na
+  providnoj pozadini.
+- `favicon.ico` (32x32, uz 16x16 unutra) i `apple-touch-icon.png` (180x180) —
+  isti crtež, beo, na punoj `--mornar-900` pozadini, jer iOS providnost ne
+  prikazuje nego je zacrni.
+- `og-slika.png` (1200x630) — ime, opis i ikonica na identitetskoj traci.
+  Namerno **nije** ista slika kao apple-touch-icon: kvadrat od 180px u
+  pregledu linka izgleda kao greška, a ovaj format je ono što servisi zaista
+  prikazuju.
+- `includes/glava.php` — zajednički `<head>` (naslov, opis, ikonice,
+  `theme-color`, Open Graph). Postoji zato što četiri stranice imaju sopstveni
+  `<html>`: `zaglavlje.php`, `prijava.php`, `registracija.php` i `greska.php`.
+
+`theme-color` prati temu: kad je izabrana, ide jedna oznaka; kad nije, idu dve
+sa `media` upitom, pa i traku pregledača bira sistem.
+
+**Kako su rasterske ikonice napravljene, kad na mašini nema ni ImageMagick-a ni
+rsvg-a:** SVG je iscrtan u headless Chrome-u na 512x512, pa je Pillow smanjio
+sliku na 180px i 32px. Isti postupak je dao i `og-slika.png`, koja zato koristi
+prave fontove projekta (Barlow Condensed) i boje iz palete.
+
+**Otkriveno usput:** prvi `favicon.svg` se uopšte nije prikazivao. Uzrok je
+komentar u kom je pisalo `--plava-500`: **dve crtice zaredom su u XML komentaru
+zabranjene**, pa je ceo fajl bio neispravan XML. Pregledač je ćutke prikazivao
+praznu ikonicu; otkriveno tek kad je fajl pušten kroz XML parser. Naziv
+promenljive sada u komentaru stoji bez crtica, uz objašnjenje zašto.
+
+### 2. Tamna tema
+
+#### Zašto je bilo potrebno dirati pravila, a ne samo vrednosti
+
+Zamisao je bila da se promene samo vrednosti promenljivih. To nije bilo moguće
+jer je **isti ton služio u dve suprotne uloge**: `--mornar-800` je bio i boja
+naslova (tamno slovo na belom) i pozadina zaglavlja tabele (belo slovo na
+tamnom). U tamnoj temi naslov mora da posvetli, a zaglavlje tabele da ostane
+tamno — jedna promenljiva to ne može oboje. Isto važi za `--plava-500`
+(link **i** pozadina dugmeta) i `--mornar-700`.
+
+Zato je `css/style.css` podeljen na dva sloja:
+
+| Sloj | Šta sadrži | Menja se sa temom |
+|---|---|---|
+| **PALETA** | `--mornar-950`, `--plava-300`… — tonovi marke | ne |
+| **ULOGE** | `--naslov`, `--akcenat`, `--povrsina-mornar`… | da |
+
+Pravila sada imenuju ulogu, ne ton. Paleta je dopunjena sa četiri tona:
+`--crna-plava` i `--mornar-950` (dublji od `--mornar-900`, za podlogu tamne
+teme) i `--plava-300` / `--plava-200` (akcenat kao **slovo** na tamnoj podlozi —
+`--plava-500` tamo daje svega 3.4:1).
+
+Vrednosti tamne teme stoje u `--t-*`, na jednom mestu. Dva bloka
+(`[data-tema="tamna"]` i `@media (prefers-color-scheme: dark)`) ih samo
+dodeljuju ulogama, jer CSS nema način da jedan blok veže za oba slučaja.
+
+#### Kolačić i odsustvo treptaja
+
+Izbor se pamti u kolačiću `tema` (godinu dana, `SameSite=Lax`,
+`includes/tema.php`). PHP ga čita u `zaglavlje.php` i upisuje `data-tema` na
+`<html>` **pre** nego što pregledač bilo šta iscrta — bez toga bi tamna strana
+na trenutak bljesnula belo. Ovo je **treći** dokumentovani slučaj upotrebe
+kolačića, uz „zapamti me“ i pamćenje izabrane lige (dopisano u `CLAUDE.md`).
+
+Bez kolačića se ne ispisuje ništa i temu bira `prefers-color-scheme`.
+
+#### Prekidač koji radi bez JavaScripta
+
+U formi stoje **dva** dugmeta — mesec („uključi tamnu“) i sunce („uključi
+svetlu“) — a CSS prikazuje ono koje odgovara temi na snazi. Razlog je baš
+slučaj bez kolačića: server tada ne zna kako je sistem podešen, pa ne može da
+izabere pravo dugme, dok CSS to zna kroz isti media upit kojim bira i boje.
+Klik je obična forma ka `tema.php`, koja pamti kolačić i vraća korisnika nazad.
+
+`tema.php` ne veruje ničemu iz forme: traži CSRF token, prima samo `svetla` i
+`tamna`, a putanju povratka propušta samo ako počinje korenskom putanjom
+aplikacije (time otpada i `//tudji-sajt` i `http://…`).
+
+#### Bootstrap kao drugi sloj boja
+
+Uz `data-tema` se postavlja i `data-bs-theme`, pa Bootstrap sam prebojava svoje
+komponente (padajuće menije, polja, strelicu u `<select>`). Kad kolačića nema,
+to radi četiri reda skripte u `<head>`-u — ali **i bez JavaScripta stranica je
+ispravno tamna**, jer naši tokeni idu kroz `@media`; svetle ostaju samo
+Bootstrap-ove komponente, dok korisnik jednom ne dodirne prekidač.
+
+#### Grafikoni
+
+`js/statistika.js` je i ranije čitao boje iz CSS-a, pa se prebojava sam pri
+osvežavanju strane. Dve stvari su ipak morale da se promene, jer su bile vezane
+za **paletu** umesto za ulogu:
+
+- natpis iznad poslednje tačke crtan je bojom `--mornar-800` — u tamnoj temi
+  tamnoplavo po tamnoj kartici, nevidljivo. Sada koristi `--naslov`.
+- kriške po ulogama išle su `--plava-400 → --mornar-900`; poslednja se na
+  tamnoj kartici stapala sa podlogom. Uvedeni su `--grafikon-1..4`, koji u
+  tamnoj temi pomeraju ceo niz u svetliji deo skale, uz zadržan smer
+  „više prava = tamniji ton“.
+
+### 3. Doterivanje izgleda
+
+- **Tabele.** Tri tabele u `admin/statistika.php` bile su jedine bez
+  `.table-responsive`. Sve ostale su ga već imale.
+- **Kolona akcija u `operater/dogadjaji.php`** imala je četiri kontrole i
+  lomila se u tri reda. Sada je vidljiva samo najčešća radnja („Kvote“), a
+  ostale (Izmeni / Unesi rezultat / Obriši) stoje u meniju sa tri tačke.
+  Brisanje je i dalje forma sa CSRF tokenom, samo premeštena u meni.
+- **Stanje učitavanja** (`js/ucitavanje.js`): vrteška i onemogućeno dugme na
+  uplati tiketa (AJAX) i na preuzimanju sa API-ja (obična forma, poziv sme da
+  traje do 8 sekundi).
+- **Zaglavlje stranice.** Novije strane slagale su razmak Bootstrap klasama —
+  negde `mb-3`, negde `mb-4`, uz dvostruki procep kad iza podnaslova dođe i
+  dugme. Uvedena je klasa `.zaglavlje-strane` sa ukupno 1.5rem ispod, koliko
+  daje `mb-4` na ostalim stranama.
+- **Naslovi stranica.** Svaka strana već je imala svoj, ali su se dva
+  ponavljala (`Transakcije` i kod igrača i kod admina). Sada su svi jedinstveni
+  („Moje transakcije“ / „Sve transakcije“), a `operater/kvote.php` nosi i imena
+  timova, jer operater otvara više kvota odjednom.
+
+### Kontrast — izmereno, ne procenjeno
+
+Napravljen je privremeni alat koji u pregledaču prolazi kroz **svaki vidljiv
+tekst**, čita stvarnu izračunatu boju slova i stvarnu podlogu ispod njih
+(slažući poluprovidne slojeve), pa računa WCAG odnos. Meri se ono što se
+iscrta, ne vrednosti tokena.
+
+Rezultat: **4674 provere na 25 stranica x 2 teme, sve ≥ 4.5:1** (odnosno ≥ 3:1
+za krupan tekst). Alat je usput našao **šest stvarnih grešaka**, od kojih pet
+starijih od tamne teme:
+
+| Gde | Bilo | Sada |
+|---|---|---|
+| `.podnozje .napomena` (na svakoj strani) | 3.44:1 | **6.14:1** |
+| `.btn-outline-warning` („Blokiraj“) | 1.63:1 | **5.98:1** |
+| `.btn-uplati:disabled` („Uplati tiket“) | 1.60:1 | **10.57:1** |
+| `--dobitak` na svojoj podlozi | 3.88:1 | **5.03:1** |
+| `--ceka` na svojoj podlozi | 3.43:1 | **5.43:1** |
+| link u `.alert-secondary` | 3.50:1 | **5.21:1** |
+
+Uz to, u tamnoj temi: `.text-muted` i `.form-text` (Bootstrap-ovo `#6c757d`)
+davali su 3.82:1, a `btn-outline-danger`/`success`/`secondary` po ~3.9:1 — sve
+preuzimaju naše tokene i sada su 7.5–10:1.
+
+**Najveće iznenađenje:** linkovi nikad nisu ni bili u boji marke. Bootstrap 5.3
+ih boji preko `--bs-link-color-**rgb**`, a ne preko `--bs-link-color`, pa je
+postavka iz prve verzije `style.css` bila bez ikakvog dejstva — svi linkovi su
+sve vreme bili Bootstrap-plavi `#0d6efd`, koji na pozadini strane daje 4.12:1.
+Otkriveno tek merenjem iscrtane strane; da su se merili tokeni, ne bi se videlo.
+
+Mereni su i tonovi krišaka kružnog grafikona (OKLab ΔE, isti postupak kao
+ranije): u tamnoj temi susedni tonovi se razlikuju za ΔE 9.5–13.3, a svaki ima
+bar 4.5:1 prema kartici. Prvi predlog (`#bcdcfa`) je odbačen na ΔE 7.3.
+
+### Prelivanje na uskim ekranima — takođe izmereno
+
+Drugi privremeni alat učitava svaku stranicu u okviru širine 375px i prijavljuje
+svaki element koji izlazi iz te širine (preskačući one unutar kutije sa
+sopstvenim vodoravnim klizačem, kakva je `.table-responsive`).
+
+Našao je dva stvarna prelivanja:
+
+- `admin/logovi.php` — grupa od četiri dugmeta „poslednjih 50/100/200/500“ bila
+  je široka 416px. Reč „poslednjih“ se sada kaže jednom, ispred grupe; čitačima
+  ekrana pun tekst i dalje stiže kroz `aria-label`.
+- `admin/statistika.php` — **grešku sam sam napravio** dok sam umotavao tabele
+  u `.table-responsive`: zamena je pogodila i zatvarajući tag skrivene tabele
+  (one koja služi kao tekstualna zamena za grafikon), pa je ostao višak
+  `</div>` koji je prerano zatvarao `.container`. Zbog toga su svi redovi ispod
+  izlazili iz okvira. Alat je to prijavio kao prelivanje od 8 i 12 piksela, što
+  je tačno negativna margina `.row`-a — trag po kom se i našlo.
+
+Posle ispravki: **25 stranica x 2 teme, nijedno prelivanje.**
+
+### Ostalo testirano
+
+- **Prekidač bez JavaScripta** — proveren `curl`-om, koji JS uopšte ne izvršava:
+  klik na mesec upisuje kolačić i vraća `data-tema="tamna"`, klik na sunce
+  vraća `svetla`. Kolačić traje 365 dana.
+- **Odbrana `tema.php`** — bez CSRF tokena se ništa ne menja; `povratak` na
+  `https://zlonamerni.example` i na `//zlonamerni.example` završava na početnoj;
+  `GET` ne menja ništa; nepoznata vrednost (`neonska`) se ignoriše.
+- **Vrteška ne guta `name=value`.** Onemogućeno dugme pregledač ne broji kao
+  pošiljaoca forme, pa bi se izgubila razlika između „Preuzmi“ i „Osveži sa
+  servera“ (`osvezi=1`). Zato se stanje menja tek u sledećem prolazu petlje
+  događaja. Provereno klikovima u pregledaču uz test server: „Preuzmi“ bez keša
+  → poziv, „Osveži“ nad svežim kešom → **ipak poziv**, „Preuzmi“ nad svežim
+  kešom → bez poziva. Tačno dva poziva, kako i treba.
+- **Sve 25 stranica, obe teme:** HTTP 200, nijedan `Fatal error`, `Warning`,
+  `Notice`, `Deprecated`, `SQLSTATE` ni putanja `/opt/lampp` u odgovoru.
+- `favicon.ico` je stizao **bez `Content-Type`** zaglavlja — ovaj Apache nema
+  MIME oznaku za `.ico`. Dopisan `AddType image/x-icon .ico` u `.htaccess`;
+  ostale zabrane (`.sql`, `.log`, `.md`, `kes/`, `config/`) i dalje vraćaju 403.
+- Snimcima ekrana provereni panel tiketa sa stavkama, meni sa tri tačke,
+  grafikoni i traka uvoza — u obe teme.
+
+Meni operatera je usput dobio osmu stavku i počeo da se prelama usred naziva
+(„DOGAĐAJI / I KVOTE“); naziv sada ostaje u jednom komadu, a do 1400px se steže
+razmak između stavki.
+
+Privremeni alati (merač kontrasta, merač prelivanja, klikač, test server API-ja)
+nisu deo aplikacije i obrisani su, zajedno sa tri probna naloga i njihovim
+podacima. U bazi su ostala zatečena 3 naloga, 12 događaja, 24 tima i 66 kvota.
+
+---
+
+## Grupisanje navigacije u padajuće menije (2026-08-26)
+
+Meni operatera (8 stavki) i admina (7 stavki) se na srednjim širinama lomio.
+Prošli krug je to zaobišao stezanjem razmaka do 1400px - ovaj krug rešava
+uzrok: stavke su grupisane, pa oba menija sad imaju po 4 vrha.
+
+- **Operater:** Ponuda | Utakmice ▾ | Šifarnici ▾ | Dokumenta
+- **Admin:** Ponuda | Korisnici ▾ | Poslovanje ▾ | Nadzor ▾
+- **Igrač:** bez izmena - četiri stavke, grupisanje bi tu bilo suvišno.
+
+„Mapiranje liga" (`operater/api_lige.php`) je pritom prvi put ušlo u glavni
+meni - ranije je bilo dostupno samo jednim klikom sa stranice za uvoz.
+
+### `grupa_menija()` - deli logiku sa `stavka_menija()`, ne duplira je
+
+Provera „da li je ovo trenutna stranica" je izvučena u `stavka_aktivna()`, koju
+sada koriste obe funkcije. Grupa dobija `.active` (istu tanku crtu ispod kao
+pojedinačna stavka) čim je **bilo koja** njena stavka trenutna - ali
+`aria-current="page"` i dalje nosi **isključivo** ta jedna stvarna stavka, ne i
+naslov grupe. Razlog: grupa nije stranica, ona samo sadrži jednu, i čitač
+ekrana ne sme da pomisli suprotno. Provereno u izvornom HTML-u
+(`operater/lige.php`, operater): tačno dva `active` na strani - na toggle-u
+„Šifarnici" i na stavci „Lige", uz `aria-current="page"` samo na drugoj.
+
+### Otvaranje u tri sloja, umesto pisanja nove JS komponente
+
+1. **Bez JavaScripta** - `:hover` i `:focus-within` u `style.css`. Radi zato
+   što Bootstrap-ova klasa `.dropdown` već postavlja `position: relative` na
+   roditelja (`<li>`), pa apsolutno pozicioniran `.dropdown-menu` ispravno
+   padne ispod bez ijedne linije JS-a ili Poppera. Specifičnost `.navbar
+   .dropdown:hover > .dropdown-menu` (0,3,0) je veća od Bootstrap-ovog
+   `.dropdown-menu` (0,1,0), pa `!important` nije trebalo.
+2. **Sa JavaScriptom, na širem ekranu (≥992px)** - Bootstrap-ov ugrađeni
+   dropdown iz `bootstrap.bundle.min.js`, koji je već učitan na svakoj strani.
+   Klik, strelice kroz stavke, Escape koje vraća fokus na toggle - ništa od
+   toga nije ručno pisano, samo ispravno postavljen `data-bs-toggle="dropdown"`
+   i `aria-expanded`.
+3. **Sa JavaScriptom, u sažetom (mobilnom) meniju (<992px)** - isti Bootstrap
+   mehanizam, ali se meni prikazuje kao **ugnežđena lista** u toku teksta
+   (`position: static`), ne kao popup preko sadržaja. `data-bs-display="static"`
+   na toggle-u govori Bootstrap-u da ne pokreće Popper, čije bi inline stilove
+   inače trebalo nadjačavati.
+
+### Otkriveno usput - isti obrazac greške kao prošli put
+
+**`.dropdown-item.active` je bio Bootstrap-ovo plavo `#0d6efd`, ne naše.**
+Isti obrazac kao `--bs-link-color-rgb` iz prošlog kruga: `.dropdown-menu` je
+već imao `--bs-dropdown-link-hover-bg` postavljen na naš token, ali ne i
+`--bs-dropdown-link-active-bg` - pa je stavka koja predstavlja trenutnu
+stranicu u meniju (npr. „Lige" dok je operater na `operater/lige.php`) bila
+obojena tuđom bojom umesto markom sajta. Otkriveno snimkom ekrana, ne merenjem
+koda - kontrast sam po sebi nije bio loš (belo na `#0d6efd` prolazi), samo je
+boja bila pogrešna. Ispravljeno preko istog `--povrsina-akcenat` tokena koji
+već nosi `.btn-primary` (5.70:1, izmereno u prošlom krugu, ne zavisi od teme).
+
+### Testirano
+
+**Tastatura**, sintetičkim `KeyboardEvent`-ima na `document.activeElement`
+unutar prave stranice (ne na pogođenom selektoru - prva verzija testa je
+slala Escape na prvi `.dropdown-item` u **celom** dokumentu, koji pripada
+prvoj grupi, a ne trenutno fokusiranoj; ispravljeno da uzima stvarno
+fokusiran element):
+- fokus na toggle → `ArrowDown` → `aria-expanded="true"`, `.dropdown-menu`
+  dobija `.show`, fokus prelazi na prvu stavku;
+- drugi `ArrowDown` → fokus prelazi na drugu stavku;
+- `Escape` sa fokusa unutar menija → `aria-expanded="false"`, `.show` nestaje,
+  fokus se vraća na toggle.
+
+**Bez JavaScripta - dokazano, ne pretpostavljeno.** Stranica je preuzeta preko
+`curl`-a, iz nje su fizički uklonjena sva tri `<script>` taga (ne samo
+onemogućen JS zastavicom), na toggle je dodat čist HTML atribut `autofocus`
+(ne zahteva JS), i takva stranica je otvorena u Chrome-u sa
+`--disable-javascript`. Snimak ekrana pokazuje otvoren meni „Utakmice" -
+`:focus-within` ga je otkrio bez ijedne linije skripte na strani. Isti
+mehanizam (isti CSS selektor, samo drugi pseudo-klasa okidač) stoji iza
+`:hover` verzije za miš.
+
+**Vizuelno, snimcima ekrana, u obe teme:**
+- meni otvoren na 1350px (desktop popup) - svetla i tamna se slažu, samo se
+  podloga menija menja (`var(--karta)`), tekst i akcenat ostaju čitljivi;
+- meni otvoren na 375px posle klika na hamburger (ugnežđena lista) - stavke
+  su uvučene, sa tananom levom trakom, bez senke i bez zaobljenih ivica -
+  vizuelno deo iste tamne trake kao ostatak sažetog menija, ne odvojena kartica;
+- tačno na granici: 992px daje pun desktop popup (hamburger već sakriven),
+  991px daje ugnežđenu listu (hamburger vidljiv) - lom je oštar, bez
+  međustanja.
+
+**Prelivanje, automatski, na 375 / 768 / 992 / 1200px, u obe teme, i sa
+zatvorenim i sa otvorenim menijem** (za mobilne širine: klik na hamburger pa
+na prvu grupu, pre merenja) - `index.php`, `operater/lige.php`,
+`operater/dogadjaji.php`, `operater/uvoz.php`, `admin/korisnici.php`:
+**nijedno prelivanje, nijedna kombinacija.**
+
+**Ostalo:** 26 kombinacija stranica × tema (sve tri uloge) - HTTP 200, bez
+`Fatal error`, `Warning`, `Notice`, `Deprecated`, `SQLSTATE` ni putanje
+`/opt/lampp`. Igračev meni proveren da je ostao potpuno nepromenjen (pet ravnih
+stavki, bez grupa). PHP sintaksa čista na svih 54 fajla.
+
+Privremeni alati (merač prelivanja, klikač sa tastaturom, test bez JS-a) nisu
+deo aplikacije i obrisani su, zajedno sa probnim nalozima. U bazi su ostala
+zatečena 3 naloga, 12 događaja, 24 tima.

@@ -91,7 +91,7 @@ try {
 }
 
 $csrf_token = generisi_csrf_token();
-$naslov_stranice = 'Dokumenti';
+$naslov_stranice = 'Svi dokumenti';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 

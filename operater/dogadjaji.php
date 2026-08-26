@@ -251,22 +251,55 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                                 <?php endif; ?>
                             </td>
                             <td><?= (int) $dogadjaj['broj_kvota'] ?></td>
+                            <?php
+                            // Kolona akcija je za neobrađen događaj imala četiri kontrole
+                            // (Kvote, Izmeni, Rezultat, Obriši) i lomila se u tri reda.
+                            // Sada je vidljiva samo najčešća radnja - "Kvote" - a ostale
+                            // stoje u padajućem meniju. Obrađen događaj ima jednu jedinu
+                            // akciju, pa se meni tamo i ne pravi.
+                            ?>
                             <td class="text-end">
-                                <a href="<?= KORENSKI_URL ?>/operater/kvote.php?dogadjaj_id=<?= (int) $dogadjaj['id'] ?>" class="btn btn-sm btn-outline-secondary">Kvote</a>
+                                <div class="akcije-celija">
+                                    <a href="<?= KORENSKI_URL ?>/operater/kvote.php?dogadjaj_id=<?= (int) $dogadjaj['id'] ?>"
+                                       class="btn btn-sm btn-outline-secondary">Kvote</a>
 
-                                <?php if ($obradjen): ?>
-                                    <?php // Obrađen događaj se ne menja i ne briše - tiketi su rešeni po njemu ?>
-                                    <span class="status status-storniran">obrađen</span>
-                                <?php else: ?>
-                                    <a href="<?= KORENSKI_URL ?>/operater/dogadjaji.php?izmeni=<?= (int) $dogadjaj['id'] ?>" class="btn btn-sm btn-outline-primary">Izmeni</a>
-                                    <a href="<?= KORENSKI_URL ?>/operater/rezultati.php" class="btn btn-sm btn-outline-success">Rezultat</a>
-                                    <form method="post" class="d-inline" onsubmit="return confirm('Obrisati ovaj događaj?');">
-                                        <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
-                                        <input type="hidden" name="akcija" value="obrisi">
-                                        <input type="hidden" name="id" value="<?= (int) $dogadjaj['id'] ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Obriši</button>
-                                    </form>
-                                <?php endif; ?>
+                                    <?php if ($obradjen): ?>
+                                        <?php // Obrađen događaj se ne menja i ne briše - tiketi su rešeni po njemu ?>
+                                        <span class="status status-storniran">obrađen</span>
+                                    <?php else: ?>
+                                        <div class="dropdown">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary dugme-akcija"
+                                                    data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false"
+                                                    aria-label="Ostale akcije za ovaj događaj">
+                                                <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <a class="dropdown-item" href="<?= KORENSKI_URL ?>/operater/dogadjaji.php?izmeni=<?= (int) $dogadjaj['id'] ?>">
+                                                        <i class="bi bi-pencil" aria-hidden="true"></i> Izmeni
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="<?= KORENSKI_URL ?>/operater/rezultati.php">
+                                                        <i class="bi bi-flag" aria-hidden="true"></i> Unesi rezultat
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <?php // Brisanje ostaje forma sa CSRF tokenom, samo je premešteno u meni ?>
+                                                    <form method="post" onsubmit="return confirm('Obrisati ovaj događaj?');">
+                                                        <input type="hidden" name="csrf_token" value="<?= bezbedno($csrf_token) ?>">
+                                                        <input type="hidden" name="akcija" value="obrisi">
+                                                        <input type="hidden" name="id" value="<?= (int) $dogadjaj['id'] ?>">
+                                                        <button type="submit" class="dropdown-item stavka-brisanje">
+                                                            <i class="bi bi-trash" aria-hidden="true"></i> Obriši
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

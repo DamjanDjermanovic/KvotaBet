@@ -217,18 +217,19 @@ $slobodni_tipovi = array_filter($svi_tipovi, function ($tip) use ($iskorisceni_t
 });
 
 $csrf_token = generisi_csrf_token();
-$naslov_stranice = 'Kvote';
+$naslov_stranice = 'Kvote: ' . $dogadjaj['domacin_naziv'] . ' — ' . $dogadjaj['gost_naziv'];
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="mb-1">Kvote</h1>
-<p class="text-muted mb-4">
-    <?= bezbedno($dogadjaj['domacin_naziv']) ?> — <?= bezbedno($dogadjaj['gost_naziv']) ?>
-    <span class="mx-1">·</span> <?= bezbedno($dogadjaj['sport_naziv']) ?> / <?= bezbedno($dogadjaj['liga_naziv']) ?>
-    <span class="mx-1">·</span> <?= bezbedno(formatiraj_datum_vreme($dogadjaj['vreme_pocetka'])) ?>
-</p>
-
-<a href="<?= KORENSKI_URL ?>/operater/dogadjaji.php" class="btn btn-sm btn-outline-secondary mb-4">&laquo; Nazad na događaje</a>
+<div class="zaglavlje-strane">
+    <h1>Kvote</h1>
+    <p class="podnaslov">
+        <?= bezbedno($dogadjaj['domacin_naziv']) ?> — <?= bezbedno($dogadjaj['gost_naziv']) ?>
+        <span class="mx-1">·</span> <?= bezbedno($dogadjaj['sport_naziv']) ?> / <?= bezbedno($dogadjaj['liga_naziv']) ?>
+        <span class="mx-1">·</span> <?= bezbedno(formatiraj_datum_vreme($dogadjaj['vreme_pocetka'])) ?>
+    </p>
+    <a href="<?= KORENSKI_URL ?>/operater/dogadjaji.php" class="btn btn-sm btn-outline-secondary nazad">&laquo; Nazad na događaje</a>
+</div>
 
 <?php prikazi_poruke(); ?>
 

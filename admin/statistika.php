@@ -107,11 +107,15 @@ for ($i = 0; $i < $dana_u_grafikonu; $i++) {
 // (gost -> igrac -> operater -> admin), pa nose jednu boju u četiri tona:
 // što više prava, to tamniji ton. Redosled je vezan za ulogu, a ne za broj
 // pristupa, da isti nalog ne bi menjao boju kad se podaci promene.
+//
+// Nazivi su --grafikon-N, a ne tonovi iz palete: --grafikon-N prati temu, pa
+// se ceo niz u tamnoj temi pomera u svetliji deo skale. Ranije je ovde stajao
+// --mornar-900, koji na tamnoj kartici praktično nestane.
 $boje_uloga = [
-    'gost'     => '--plava-400',
-    'igrac'    => '--plava-500',
-    'operater' => '--mornar-700',
-    'admin'    => '--mornar-900',
+    'gost'     => '--grafikon-1',
+    'igrac'    => '--grafikon-2',
+    'operater' => '--grafikon-3',
+    'admin'    => '--grafikon-4',
 ];
 
 // Uloge se mogu dodavati kroz admin/uloge.php, pa grafikon mora podneti i
@@ -300,6 +304,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
         <div class="card shadow-sm">
             <div class="card-body">
                 <h2 class="mb-3">Pristupi po ulozi</h2>
+                <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <?php foreach ($po_ulozi as $red): ?>
                         <tr>
@@ -311,6 +316,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         <tr><td colspan="2"><div class="prazno"><i class="bi bi-inbox" aria-hidden="true"></i>Nema podataka za prikaz.</div></td></tr>
                     <?php endif; ?>
                 </table>
+                </div>
             </div>
         </div>
     </div>
@@ -319,6 +325,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
         <div class="card shadow-sm mb-4">
             <div class="card-body">
                 <h2 class="mb-3">Najposećenije stranice</h2>
+                <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <?php foreach ($najposecenije_stranice as $red): ?>
                         <tr>
@@ -330,12 +337,14 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         <tr><td colspan="2"><div class="prazno"><i class="bi bi-inbox" aria-hidden="true"></i>Nema podataka za prikaz.</div></td></tr>
                     <?php endif; ?>
                 </table>
+                </div>
             </div>
         </div>
 
         <div class="card shadow-sm">
             <div class="card-body">
                 <h2 class="mb-3">Najaktivniji prijavljeni korisnici</h2>
+                <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <?php foreach ($najaktivniji_korisnici as $red): ?>
                         <tr>
@@ -351,6 +360,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         <tr><td colspan="2"><div class="prazno"><i class="bi bi-inbox" aria-hidden="true"></i>Nema podataka za prikaz.</div></td></tr>
                     <?php endif; ?>
                 </table>
+                </div>
             </div>
         </div>
     </div>

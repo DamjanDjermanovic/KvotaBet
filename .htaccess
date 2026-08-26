@@ -11,6 +11,11 @@ ErrorDocument 500 /kladionica/greska.php
 # Bez izlistavanja sadržaja foldera koji nemaju index stranicu
 Options -Indexes
 
+# Ovaj Apache nema ugrađenu MIME oznaku za .ico, pa je favicon.ico stizao bez
+# Content-Type zaglavlja. Pregledači ga tada pogađaju po sadržaju - radi, ali
+# se ne treba oslanjati na pogađanje.
+AddType image/x-icon .ico
+
 # display_errors se NE gasi ovde nego u config/konfiguracija.php preko
 # ini_set(). php_flag radi samo uz mod_php i oborio bi server greškom 500 na
 # okruženjima gde tog modula nema (PHP-FPM), dok ini_set radi svuda.

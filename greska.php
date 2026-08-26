@@ -10,6 +10,7 @@
 // REDIRECT_STATUS (kad je pozove Apache preko ErrorDocument iz .htaccess).
 
 require_once __DIR__ . '/config/konfiguracija.php';
+require_once __DIR__ . '/includes/glava.php';
 
 $kod = (int) ($_GET['kod'] ?? $_SERVER['REDIRECT_STATUS'] ?? 404);
 
@@ -45,15 +46,13 @@ if (!headers_sent()) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="sr">
+<html lang="sr"<?= atributi_teme() ?>>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= $kod ?> — <?= htmlspecialchars($poruka['naslov'], ENT_QUOTES, 'UTF-8') ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?= KORENSKI_URL ?>/css/style.css" rel="stylesheet">
+    <?php // Uključuje samo konfiguraciju i teme - bez baze, kao i ostatak ove stranice ?>
+    <?php ispisi_glavu($kod . ' — ' . $poruka['naslov'], $poruka['tekst']); ?>
 </head>
-<body class="bg-light">
+<?php // Bez Bootstrap-ove .bg-light: ona nameće svetlu pozadinu i u tamnoj temi ?>
+<body>
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-6">

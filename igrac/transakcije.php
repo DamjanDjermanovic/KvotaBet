@@ -28,7 +28,7 @@ try {
 // Sama provera je u includes/funkcije.php (transakcija_je_priliv), da bi
 // prikaz i preračunavanje stanja računa koristili isto pravilo.
 
-$naslov_stranice = 'Transakcije';
+$naslov_stranice = 'Moje transakcije';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 

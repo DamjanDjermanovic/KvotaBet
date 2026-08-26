@@ -151,13 +151,14 @@ $naslov_stranice = 'Mapiranje liga';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="mb-1">Mapiranje liga sa API-ja</h1>
-<p class="text-muted mb-3">
-    Servis lige označava ključevima tipa <code>soccer_epl</code>. Ovde se svaki takav ključ
-    povezuje sa ligom iz naše baze, da bi uvoz znao gde da upiše preuzete utakmice.
-</p>
-
-<a href="<?= KORENSKI_URL ?>/operater/uvoz.php" class="btn btn-sm btn-outline-secondary mb-4">&laquo; Nazad na uvoz</a>
+<div class="zaglavlje-strane">
+    <h1>Mapiranje liga sa API-ja</h1>
+    <p class="podnaslov">
+        Servis lige označava ključevima tipa <code>soccer_epl</code>. Ovde se svaki takav ključ
+        povezuje sa ligom iz naše baze, da bi uvoz znao gde da upiše preuzete utakmice.
+    </p>
+    <a href="<?= KORENSKI_URL ?>/operater/uvoz.php" class="btn btn-sm btn-outline-secondary nazad">&laquo; Nazad na uvoz</a>
+</div>
 
 <?php prikazi_poruke(); ?>
 

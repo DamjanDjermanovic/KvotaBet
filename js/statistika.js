@@ -48,7 +48,9 @@
     var bojaMreze = boja('--ivica');
     var bojaTeksta = boja('--prigusen');
     var bojaPodloge = boja('--karta');
-    var bojaNaslova = boja('--mornar-800');
+    // --naslov, a ne ton iz palete: u tamnoj temi je ovaj natpis inače
+    // crtan tamnoplavim po tamnoj kartici, pa se nije video
+    var bojaNaslova = boja('--naslov');
 
     // Zajedničke postavke: tanke linije, mreža koja se ne nameće i isti font
     // kao ostatak stranice
@@ -141,12 +143,14 @@
                 // Oblak sa podacima se pojavljuje na ceo dan, ne samo kad se
                 // pokazivač pogodi u tačku od 8 piksela
                 interaction: { mode: 'index', intersect: false },
-                layout: { padding: { top: 18 } },
+                // Gore mesta za natpis iznad tačke, desno da se natpis nad
+                // poslednjom tačkom ne odseče na ivici platna
+                layout: { padding: { top: 18, right: 12 } },
                 plugins: {
                     // Jedna serija ne treba legendu - naslov kartice već kaže šta se crta
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: boja('--mornar-900'),
+                        backgroundColor: boja('--povrsina-duboka'),
                         padding: 10,
                         displayColors: false,
                         callbacks: {
@@ -215,7 +219,7 @@
                     // Legenda je ispisana u HTML-u, zajedno sa brojem i udelom
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: boja('--mornar-900'),
+                        backgroundColor: boja('--povrsina-duboka'),
                         padding: 10,
                         callbacks: {
                             label: function (stavka) {
