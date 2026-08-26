@@ -177,16 +177,17 @@ $naslov_stranice = 'Uvoz ponude';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
-<h1 class="mb-1">Uvoz ponude sa servisa</h1>
-<p class="text-muted mb-3">
-    Pomoćni alat: preuzima utakmice i kvote sa <span class="text-nowrap">the-odds-api.com</span> i
-    nudi ih na pregled. U bazu ne ulazi ništa dok ne potvrdite izbor. Ručni unos kroz
-    <a href="<?= KORENSKI_URL ?>/operater/dogadjaji.php">Događaje</a> radi nezavisno od ovoga.
-</p>
-
-<a href="<?= KORENSKI_URL ?>/operater/api_lige.php" class="btn btn-sm btn-outline-secondary mb-4">
-    <i class="bi bi-diagram-3" aria-hidden="true"></i> Mapiranje liga
-</a>
+<div class="zaglavlje-strane">
+    <h1>Uvoz ponude sa servisa</h1>
+    <p class="podnaslov">
+        Pomoćni alat: preuzima utakmice i kvote sa <span class="text-nowrap">the-odds-api.com</span> i
+        nudi ih na pregled. U bazu ne ulazi ništa dok ne potvrdite izbor. Ručni unos kroz
+        <a href="<?= KORENSKI_URL ?>/operater/dogadjaji.php">Događaje</a> radi nezavisno od ovoga.
+    </p>
+    <a href="<?= KORENSKI_URL ?>/operater/api_lige.php" class="btn btn-sm btn-outline-secondary nazad">
+        <i class="bi bi-diagram-3" aria-hidden="true"></i> Mapiranje liga
+    </a>
+</div>
 
 <?php prikazi_poruke(); ?>
 
@@ -232,15 +233,19 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                     </select>
                 </div>
 
+                <?php // data-ucitavanje: poziv ka servisu sme da traje do
+                      // ODDS_API_TIMEOUT sekundi, pa dugme za to vreme nosi
+                      // vrtešku (js/ucitavanje.js) ?>
                 <div class="col-auto">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" data-ucitavanje="Preuzimanje...">
                         <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> Preuzmi
                     </button>
                 </div>
 
                 <div class="col-auto">
                     <?php // Isto dugme, samo sa zaobilaženjem keša - zato name/value, a ne zasebna forma ?>
-                    <button type="submit" class="btn btn-outline-secondary" name="osvezi" value="1">
+                    <button type="submit" class="btn btn-outline-secondary" name="osvezi" value="1"
+                            data-ucitavanje="Osvežavanje...">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Osveži sa servera
                     </button>
                 </div>
@@ -441,7 +446,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                             </table>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" data-ucitavanje="Upisivanje...">
                             <i class="bi bi-database-add" aria-hidden="true"></i> Sačuvaj u bazu
                         </button>
                         <span class="form-text ms-2">

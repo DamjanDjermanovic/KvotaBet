@@ -277,8 +277,20 @@
                 return;
             }
 
+            // Vrteška na dugmetu dok traje poziv. Panel se posle odgovora
+            // ionako iscrtava iznova (osveziPanel), pa se staro stanje dugmeta
+            // ne vraća - ali se vraća ako poziv padne, da igrač ne ostane pred
+            // zamrznutim dugmetom.
+            var vratiDugme = window.pokreniUcitavanje
+                ? window.pokreniUcitavanje(dugmeUplati, 'Uplata...')
+                : function () {};
+
             dugmeUplati.disabled = true;
-            posalji('tiket_uplati.php', { ulog: poljeUlog.value }).then(osveziPanel);
+
+            posalji('tiket_uplati.php', { ulog: poljeUlog.value }).then(function (odgovor) {
+                vratiDugme();
+                osveziPanel(odgovor);
+            });
         });
     }
 

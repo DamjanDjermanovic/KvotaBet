@@ -1,21 +1,54 @@
 /* =====================================================================
    KLADIONICA — vizuelni identitet
-   Osnovna paleta: četiri plava tona (Prussian → Cornflower).
-   Dopuna: hladni neutrali izvedeni iz iste plave + tri semantičke boje
+   Osnovna paleta: četiri plava tona (Prussian → Cornflower), dopunjena sa
+   dva dublja i dva svetlija za tamnu temu.
+   Uz njih: hladni neutrali izvedeni iz iste plave + tri semantičke boje
    za ishode tiketa, jer se dobitak i gubitak ne mogu razlikovati
    nijansama iste boje.
+
+   Fajl je podeljen na dva sloja:
+     PALETA  — tonovi marke, isti u obe teme;
+     ULOGE   — koja promenljiva nosi koju ulogu; jedino ovo tema menja.
+   Nijedno pravilo ispod ne pominje ton iz palete direktno, osim tamo gde
+   je podloga tamna u obe teme (navigacija, podnožje, log).
    ===================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap');
 
+/* ---------------------------------------------------------------------
+   PALETA — ne menja se sa temom. Ovo je identitet marke; tema bira KOJI
+   ton nosi koju ulogu, ne menja same tonove.
+   --------------------------------------------------------------------- */
+
 :root {
-    /* --- osnovna paleta --- */
+    --crna-plava: #00030f;   /* najdublja podloga — samo tamna tema */
+    --mornar-950: #00051f;   /* međukorak, dublji od --mornar-900 */
     --mornar-900: #00072d;   /* prussian blue  — najdublja pozadina */
     --mornar-800: #001c55;   /* deep navy      — navigacija, panel tiketa */
     --mornar-700: #0a2472;   /* imperial blue  — naslovi sekcija */
     --plava-500:  #0e6ba8;   /* cornflower     — akcenat, linkovi, akcije */
     --plava-400:  #1a86cc;   /* svetliji akcenat za hover */
+    --plava-300:  #58b0f0;   /* akcenat kao TEKST na tamnoj podlozi */
+    --plava-200:  #8ecbf7;   /* hover nad takvim tekstom */
+}
 
+/* ---------------------------------------------------------------------
+   ULOGE — jedino ovo tema menja.
+
+   Zašto uloge, a ne direktno paleta: isti ton je u svetloj temi služio na
+   dva suprotna načina. --mornar-800 je bio i boja naslova (tamno slovo na
+   belom) i pozadina zaglavlja tabele (belo slovo na tamnom). U tamnoj temi
+   naslov mora da posvetli, a zaglavlje tabele da ostane tamno — jedna
+   promenljiva to ne može oboje. Zato su razdvojene: --naslov je uloga
+   "istaknuto slovo", --povrsina-mornar je uloga "tamna traka".
+
+   Vrednosti tamne teme stoje u --t-* i definisane su ovde, na jednom mestu.
+   Dva bloka ispod ih samo dodeljuju ulogama, jer se tamna tema primenjuje
+   u dva slučaja (izbor korisnika i sistemsko podešavanje), a CSS nema način
+   da jedan blok pravila veže za oba.
+   --------------------------------------------------------------------- */
+
+:root {
     /* --- neutrali (hladni, izvedeni iz plave) --- */
     --papir:      #f2f5fa;   /* pozadina strane */
     --karta:      #ffffff;
@@ -24,13 +57,69 @@
     --tekst:      #131c33;
     --prigusen:   #5c6883;
 
-    /* --- semantičke boje ishoda --- */
-    --dobitak:    #0d8a5c;
-    --dobitak-bg: #e6f5ee;
-    --gubitak:    #b3261e;
-    --gubitak-bg: #fbeae8;
-    --ceka:       #b57608;
-    --ceka-bg:    #fdf3e0;
+    /* --- istaknuta slova --- */
+    --naslov: var(--mornar-800);   /* naslovi, brojevi, istaknute vrednosti */
+    --oznaka: var(--mornar-700);   /* natpisi polja, verzalne oznake */
+
+    /* --- akcenat kao SLOVO (link, oznaka tipa igre, eyebrow) --- */
+    --akcenat:       var(--plava-500);
+    --akcenat-hover: var(--mornar-700);
+    /* Isti tonovi razloženi na kanale — Bootstrap ih traži u tom obliku */
+    --akcenat-rgb:       14, 107, 168;
+    --akcenat-hover-rgb: 10, 36, 114;
+    --akcenat-slab:  rgba(14, 107, 168, .10);
+    --akcenat-ivica: rgba(14, 107, 168, .28);
+    --fokus-prsten:  rgba(14, 107, 168, .16);
+
+    /* --- akcenat kao POVRŠINA (belo slovo na njoj) --- */
+    --povrsina-akcenat:      var(--plava-500);
+    --povrsina-akcenat-jaka: var(--mornar-700);
+
+    /* Semantičke boje kao POVRŠINA. Ne prate temu: --gubitak i --dobitak u
+       tamnoj temi postaju svetli (da bi bili čitljivi kao slovo), pa belo
+       slovo na njima ne bi imalo kontrast. Ovi tonovi ostaju tamni u obe
+       teme, kao i --povrsina-akcenat. */
+    --povrsina-gubitak: #b3261e;
+    --povrsina-dobitak: #0a764d;
+
+    /* --- tamne trake, iste u obe teme --- */
+    --povrsina-mornar: var(--mornar-800);   /* zaglavlje tabele, glava tiketa */
+    --povrsina-duboka: var(--mornar-900);   /* navigacija, podnožje, log */
+
+    /* --- prolazna stanja --- */
+    --red-hover:   #f7f9fd;
+    --kvota-hover: #f0f7fc;
+    --treperenje:  #fff6d9;
+
+    /* --- semantičke boje ishoda ---
+       Tonovi su potamnjeni u odnosu na prvu verziju: izmereno je da su
+       #0d8a5c i #b57608 na svojim podlogama davali 3.88:1 i 3.43:1, ispod
+       praga 4.5:1 za tekst. Sada su 5.03:1 i 5.43:1. */
+    --dobitak:       #0a764d;
+    --dobitak-bg:    #e6f5ee;
+    --dobitak-ivica: #b8e0cd;
+    --dobitak-tekst: #0a5c3e;
+    --gubitak:       #b3261e;
+    --gubitak-bg:    #fbeae8;
+    --gubitak-ivica: #f0c5c1;
+    --gubitak-tekst: #8a1c16;
+    --ceka:          #8a5905;
+    --ceka-bg:       #fdf3e0;
+    --ceka-ivica:    #f0dcb4;
+    --ceka-tekst:    #7d5206;
+    --info-bg:       #e7f1f9;
+    --info-tekst:    var(--mornar-700);
+
+    /* --- tonovi grafikona ---
+       Uloge su stepenice ovlašćenja (gost -> igrac -> operater -> admin), pa
+       nose jednu boju u četiri tona: što više prava, tamniji ton. U tamnoj
+       temi se ceo niz pomera u svetliji deo skale, jer bi --mornar-900 na
+       tamnoj kartici bio nevidljiv. Susedni tonovi se razlikuju za najmanje
+       ΔE 9.5 (OKLab), a svaki ima bar 4.5:1 prema svojoj podlozi. */
+    --grafikon-1: var(--plava-400);
+    --grafikon-2: var(--plava-500);
+    --grafikon-3: var(--mornar-700);
+    --grafikon-4: var(--mornar-900);
 
     /* --- identitetski gradijent (sva četiri tona palete) --- */
     --traka: linear-gradient(90deg, var(--mornar-900), var(--mornar-800), var(--mornar-700), var(--plava-500));
@@ -42,12 +131,150 @@
     --senka:      0 1px 2px rgba(0, 7, 45, .06), 0 4px 16px rgba(0, 7, 45, .06);
     --senka-jaka: 0 8px 28px rgba(0, 7, 45, .16);
 
+    /* Smer prelivanja za Bootstrap-ove pruge i hover u tabeli: u svetloj temi
+       se red zatamnjuje, u tamnoj posvetljuje */
+    --tinta-rgb: 0, 0, 0;
+
     /* Bootstrap prima ove promenljive direktno */
     --bs-primary: var(--plava-500);
     --bs-body-color: var(--tekst);
+    --bs-body-bg: var(--karta);
+    --bs-emphasis-color: var(--tekst);
+    --bs-emphasis-color-rgb: var(--tinta-rgb);
+    --bs-border-color: var(--ivica);
     --bs-body-font-family: 'Barlow', system-ui, sans-serif;
-    --bs-link-color: var(--plava-500);
-    --bs-link-hover-color: var(--mornar-700);
+    /* Bootstrap 5.3 linkove boji preko --bs-link-color-RGB, ne preko
+       --bs-link-color (koristi rgba() sa --bs-link-opacity). Bez ova dva
+       reda linkovi ostaju Bootstrap-plavi #0d6efd, koji na pozadini strane
+       daje 4.12:1 — ispod praga. */
+    --bs-link-color: var(--akcenat);
+    --bs-link-hover-color: var(--akcenat-hover);
+    --bs-link-color-rgb: var(--akcenat-rgb);
+    --bs-link-hover-color-rgb: var(--akcenat-hover-rgb);
+    /* .text-muted i .form-text čitaju --bs-secondary-color; podrazumevano je
+       to sivo #6c757d, koje na tamnoj kartici daje 3.82:1 — ispod praga */
+    --bs-secondary-color: var(--prigusen);
+    --bs-code-color: var(--akcenat);
+
+    /* --- vrednosti tamne teme (jedino mesto gde stoje) --- */
+    --t-papir:      var(--crna-plava);
+    --t-karta:      #071634;
+    --t-ivica:      #16274d;
+    --t-ivica-jaka: #2a3f70;
+    --t-tekst:      #dfe7f5;
+    --t-prigusen:   #9dadc9;
+    --t-naslov:     #eaf1fd;
+    --t-oznaka:     #a9c6ec;
+    --t-akcenat-slab:  rgba(88, 176, 240, .14);
+    --t-akcenat-ivica: rgba(88, 176, 240, .38);
+    --t-fokus-prsten:  rgba(88, 176, 240, .25);
+    --t-red-hover:   #0e1f42;
+    --t-kvota-hover: #10254c;
+    --t-treperenje:  #3d3411;
+    --t-dobitak:       #4cd995;
+    --t-dobitak-bg:    #05301f;
+    --t-dobitak-ivica: #125c3c;
+    --t-dobitak-tekst: #7ce8b4;
+    --t-gubitak:       #ff9086;
+    --t-gubitak-bg:    #3d100c;
+    --t-gubitak-ivica: #7a2a22;
+    --t-gubitak-tekst: #ffb4ac;
+    --t-ceka:          #efc158;
+    --t-ceka-bg:       #33240a;
+    --t-ceka-ivica:    #6b5117;
+    --t-ceka-tekst:    #f5d288;
+    --t-info-bg:       #0a1e3d;
+    --t-senka:      0 1px 2px rgba(0, 0, 0, .5), 0 4px 16px rgba(0, 0, 0, .45);
+    --t-senka-jaka: 0 8px 28px rgba(0, 0, 0, .6);
+}
+
+/* Izričit izbor korisnika (kolačić "tema" -> data-tema na <html>) */
+[data-tema="tamna"] {
+    --papir:      var(--t-papir);
+    --karta:      var(--t-karta);
+    --ivica:      var(--t-ivica);
+    --ivica-jaka: var(--t-ivica-jaka);
+    --tekst:      var(--t-tekst);
+    --prigusen:   var(--t-prigusen);
+    --naslov:     var(--t-naslov);
+    --oznaka:     var(--t-oznaka);
+    --akcenat:       var(--plava-300);
+    --akcenat-hover: var(--plava-200);
+    --grafikon-1: #c9e4fd;
+    --grafikon-2: #8ecbf7;
+    --grafikon-3: #58b0f0;
+    --grafikon-4: #1a86cc;
+    --akcenat-rgb:       88, 176, 240;
+    --akcenat-hover-rgb: 142, 203, 247;
+    --akcenat-slab:  var(--t-akcenat-slab);
+    --akcenat-ivica: var(--t-akcenat-ivica);
+    --fokus-prsten:  var(--t-fokus-prsten);
+    --red-hover:   var(--t-red-hover);
+    --kvota-hover: var(--t-kvota-hover);
+    --treperenje:  var(--t-treperenje);
+    --dobitak:       var(--t-dobitak);
+    --dobitak-bg:    var(--t-dobitak-bg);
+    --dobitak-ivica: var(--t-dobitak-ivica);
+    --dobitak-tekst: var(--t-dobitak-tekst);
+    --gubitak:       var(--t-gubitak);
+    --gubitak-bg:    var(--t-gubitak-bg);
+    --gubitak-ivica: var(--t-gubitak-ivica);
+    --gubitak-tekst: var(--t-gubitak-tekst);
+    --ceka:          var(--t-ceka);
+    --ceka-bg:       var(--t-ceka-bg);
+    --ceka-ivica:    var(--t-ceka-ivica);
+    --ceka-tekst:    var(--t-ceka-tekst);
+    --info-bg:       var(--t-info-bg);
+    --info-tekst:    var(--t-oznaka);
+    --senka:      var(--t-senka);
+    --senka-jaka: var(--t-senka-jaka);
+    --tinta-rgb:  255, 255, 255;
+}
+
+/* Prvi dolazak, bez kolačića: prati se sistemsko podešavanje. Isključeno je
+   samo ako je korisnik izričito izabrao svetlu temu. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-tema="svetla"]) {
+        --papir:      var(--t-papir);
+        --karta:      var(--t-karta);
+        --ivica:      var(--t-ivica);
+        --ivica-jaka: var(--t-ivica-jaka);
+        --tekst:      var(--t-tekst);
+        --prigusen:   var(--t-prigusen);
+        --naslov:     var(--t-naslov);
+        --oznaka:     var(--t-oznaka);
+        --akcenat:       var(--plava-300);
+        --akcenat-hover: var(--plava-200);
+        --grafikon-1: #c9e4fd;
+        --grafikon-2: #8ecbf7;
+        --grafikon-3: #58b0f0;
+        --grafikon-4: #1a86cc;
+        --akcenat-rgb:       88, 176, 240;
+        --akcenat-hover-rgb: 142, 203, 247;
+        --akcenat-slab:  var(--t-akcenat-slab);
+        --akcenat-ivica: var(--t-akcenat-ivica);
+        --fokus-prsten:  var(--t-fokus-prsten);
+        --red-hover:   var(--t-red-hover);
+        --kvota-hover: var(--t-kvota-hover);
+        --treperenje:  var(--t-treperenje);
+        --dobitak:       var(--t-dobitak);
+        --dobitak-bg:    var(--t-dobitak-bg);
+        --dobitak-ivica: var(--t-dobitak-ivica);
+        --dobitak-tekst: var(--t-dobitak-tekst);
+        --gubitak:       var(--t-gubitak);
+        --gubitak-bg:    var(--t-gubitak-bg);
+        --gubitak-ivica: var(--t-gubitak-ivica);
+        --gubitak-tekst: var(--t-gubitak-tekst);
+        --ceka:          var(--t-ceka);
+        --ceka-bg:       var(--t-ceka-bg);
+        --ceka-ivica:    var(--t-ceka-ivica);
+        --ceka-tekst:    var(--t-ceka-tekst);
+        --info-bg:       var(--t-info-bg);
+        --info-tekst:    var(--t-oznaka);
+        --senka:      var(--t-senka);
+        --senka-jaka: var(--t-senka-jaka);
+        --tinta-rgb:  255, 255, 255;
+    }
 }
 
 /* =====================================================================
@@ -71,7 +298,7 @@ h1, h2, h3, h4, h5, h6,
     font-family: 'Barlow Condensed', 'Barlow', sans-serif;
     font-weight: 600;
     letter-spacing: .01em;
-    color: var(--mornar-800);
+    color: var(--naslov);
 }
 
 h1 { font-size: 2.1rem; }
@@ -85,7 +312,7 @@ h3 { font-size: 1.3rem; }
     font-weight: 600;
     letter-spacing: .12em;
     text-transform: uppercase;
-    color: var(--plava-500);
+    color: var(--akcenat);
     display: block;
     margin-bottom: .15rem;
 }
@@ -102,7 +329,7 @@ h3 { font-size: 1.3rem; }
    ===================================================================== */
 
 .navbar {
-    background: var(--mornar-900) !important;
+    background: var(--povrsina-duboka) !important;
     padding: .55rem 0;
     position: relative;
 }
@@ -155,6 +382,13 @@ h3 { font-size: 1.3rem; }
     box-shadow: inset 0 -2px 0 var(--plava-400);
 }
 
+/* Nazivi stavki i grupa su kratki, jednorečni ("Šifarnici", "Poslovanje"), pa
+   im mid-naziv prelom ionako ne preti - ali nowrap ostaje kao opšta odbrana,
+   jeftinija je od ponovnog otkrivanja istog problema. */
+@media (min-width: 992px) {
+    .navbar .nav-link { white-space: nowrap; }
+}
+
 /* Stanje računa u navigaciji */
 .nav-stanje {
     font-variant-numeric: tabular-nums;
@@ -168,14 +402,164 @@ h3 { font-size: 1.3rem; }
 }
 
 .dropdown-menu {
+    background: var(--karta);
     border: 1px solid var(--ivica);
     border-radius: var(--radijus);
     box-shadow: var(--senka-jaka);
     padding: .35rem;
+    --bs-dropdown-link-color: var(--tekst);
+    --bs-dropdown-link-hover-color: var(--naslov);
+    --bs-dropdown-link-hover-bg: var(--red-hover);
+    /* Bez ovoga .dropdown-item.active (trenutna stranica u grupi menija) ostaje
+       na Bootstrap-ovom podrazumevanom #0d6efd - tuđe plavo, ne naše. Belo
+       slovo na --povrsina-akcenat je već izmereno na 5.70:1 (isti token nosi
+       i .btn-primary), i taj odnos ne zavisi od teme. */
+    --bs-dropdown-link-active-bg: var(--povrsina-akcenat);
+    --bs-dropdown-link-active-color: #fff;
+}
+
+/* Razdvajač u padajućem meniju akcija (operater/dogadjaji.php) */
+.dropdown-divider { border-top-color: var(--ivica); }
+
+/* =====================================================================
+   GRUPE U GLAVNOJ NAVIGACIJI (Utakmice, Šifarnici, Korisnici...)
+
+   Isti .dropdown-menu kao svuda drugde (akcije nad događajem, itd.), ovde
+   samo prikačen na stavku glavnog menija. Tri sloja otvaranja:
+     1. bez JS-a:    :hover / :focus-within niže u ovom bloku
+     2. sa JS-om, ≥992px: Bootstrap-ov dropdown iz bootstrap.bundle.min.js -
+        klik, strelice, Escape - ništa od toga nije ručno pisano ovde
+     3. sa JS-om, <992px: isti Bootstrap mehanizam, ali meni je stilizovan
+        kao ugnežđena lista (position: static), ne kao popup - vidi media
+        upit ispod.
+   ===================================================================== */
+
+/* Karica menija iznad ostatka stranice - iznad .grafikon-okvir (koji nema
+   z-index) i iznad .tiket-panel (sticky, bez sopstvenog z-indexa) */
+.navbar .dropdown-menu { z-index: 1030; }
+
+/* Bez JavaScripta: hover otkriva meni mišu, focus-within otkriva Tab-om.
+   Radi zato što Bootstrap-ova klasa .dropdown već daje position:relative
+   roditelju (li), pa apsolutno pozicioniran .dropdown-menu ispravno padne
+   ispod i bez Poppera - dovoljno je samo primorati display:block. Specifičnost
+   ova tri selektora (0,3,0) je veća od Bootstrap-ovog .dropdown-menu (0,1,0),
+   pa !important nije potreban. */
+@media (min-width: 992px) {
+    .navbar .dropdown:hover > .dropdown-menu,
+    .navbar .dropdown:focus-within > .dropdown-menu {
+        display: block;
+    }
+}
+
+/* Otvoren toggle izgleda kao da je pod mišem, i sa JS-om i bez njega -
+   dosledno sa .navbar .nav-link:hover */
+.navbar .dropdown-toggle.show,
+.navbar .dropdown:hover > .dropdown-toggle,
+.navbar .dropdown:focus-within > .dropdown-toggle {
+    color: #fff !important;
+    background: rgba(255, 255, 255, .08);
+}
+
+/* Grupa je "aktivna" (neka njena stavka je trenutna stranica) na isti način
+   kao pojedinačna stavka - ista tanka crta ispod, iz .navbar .nav-link.active */
+
+.navbar .dropdown-toggle:focus-visible {
+    outline: 2px solid var(--plava-400);
+    outline-offset: 2px;
+}
+
+/* Prsten unutar okvira menija, da se ne odseče na zaobljenoj ivici kartice */
+.dropdown-item:focus-visible {
+    outline: 2px solid var(--akcenat);
+    outline-offset: -2px;
+}
+
+/* Ispod 992px je nav sažet u hamburger meni (Bootstrap-ov .navbar-collapse).
+   Dropdown tu NE sme da se ponaša kao plutajući popup preko sadržaja - na
+   telefonu je prst već na tom delu ekrana, pa bi popup samo sakrio ono što je
+   upravo dotaknuto. Umesto toga meni ulazi u tok teksta kao ugnežđena lista,
+   uvučena i sa levom trakom, u istim tonovima kao tamna pozadina navigacije
+   (i van tamne teme - .navbar je tamna u obe teme). data-bs-display="static"
+   na stavka_menija() strani govori Bootstrap-u da ne pokreće Popper, čije bi
+   inline stilove ovo pravilo inače moralo da nadjača. */
+@media (max-width: 991.98px) {
+    .navbar .dropdown-menu {
+        position: static;
+        float: none;
+        width: 100%;
+        margin: .25rem 0 .5rem;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        border-left: 2px solid rgba(255, 255, 255, .18);
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .navbar .dropdown-menu .dropdown-item {
+        color: rgba(255, 255, 255, .72);
+        padding-left: 1.1rem;
+    }
+
+    .navbar .dropdown-menu .dropdown-item:hover,
+    .navbar .dropdown-menu .dropdown-item:focus {
+        color: #fff;
+        background: rgba(255, 255, 255, .08);
+    }
+
+    .navbar .dropdown-menu .dropdown-item.active {
+        color: #fff;
+        background: rgba(255, 255, 255, .12);
+        font-weight: 600;
+    }
+
+    .dropdown-item:focus-visible { outline-offset: -1px; }
+}
+
+/* =====================================================================
+   PREKIDAČ TEME
+
+   U formi stoje dva dugmeta: "uključi tamnu" (mesec) i "uključi svetlu"
+   (sunce). Prikazuje se ono koje odgovara temi koja je trenutno na snazi.
+   Zašto tako, a ne jedno dugme: kad korisnik nije birao temu, server ne zna
+   kako mu je podešen sistem, pa ne može da izabere pravo dugme — a CSS to
+   zna, kroz isti media upit kojim bira i boje. Time prekidač radi ispravno
+   i bez JavaScripta i bez kolačića.
+   ===================================================================== */
+
+.prekidac-teme { display: flex; }
+
+.btn-tema {
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .16);
+    color: rgba(255, 255, 255, .82);
+    border-radius: var(--radijus-sm);
+    width: 2.2rem;
+    height: 2.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    padding: 0;
+    transition: background-color .15s, color .15s;
+}
+
+.btn-tema:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+.btn-tema:focus-visible { outline: 2px solid var(--plava-400); outline-offset: 2px; }
+
+/* Svetla tema (i podrazumevano stanje): nudi se prelazak na tamnu */
+.samo-u-tamnoj { display: none; }
+
+[data-tema="tamna"] .samo-u-svetloj { display: none; }
+[data-tema="tamna"] .samo-u-tamnoj { display: inline-flex; }
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-tema="svetla"]) .samo-u-svetloj { display: none; }
+    :root:not([data-tema="svetla"]) .samo-u-tamnoj { display: inline-flex; }
 }
 
 .dropdown-item { border-radius: var(--radijus-sm); padding: .45rem .7rem; }
-.dropdown-item:hover { background: var(--papir); color: var(--mornar-800); }
+.dropdown-item:hover { background: var(--red-hover); color: var(--naslov); }
 
 /* =====================================================================
    KARTICE I SEKCIJE
@@ -195,7 +579,7 @@ h3 { font-size: 1.3rem; }
     font-weight: 600;
     font-size: 1.12rem;
     letter-spacing: .03em;
-    color: var(--mornar-800);
+    color: var(--naslov);
     padding: .7rem 1rem;
 }
 
@@ -241,7 +625,7 @@ h3 { font-size: 1.3rem; }
 
 .dogadjaj-red:first-of-type { border-top: 1px solid var(--ivica); }
 .dogadjaj-red:last-child { border-radius: 0 0 var(--radijus) var(--radijus); }
-.dogadjaj-red:hover { background: #fafbfe; }
+.dogadjaj-red:hover { background: var(--red-hover); }
 
 .dogadjaj-vreme {
     font-variant-numeric: tabular-nums;
@@ -257,7 +641,7 @@ h3 { font-size: 1.3rem; }
     text-transform: uppercase;
     letter-spacing: .06em;
     font-size: .78rem;
-    color: var(--plava-500);
+    color: var(--akcenat);
 }
 
 .dogadjaj-timovi { flex: 1; min-width: 0; font-weight: 500; }
@@ -280,7 +664,7 @@ h3 { font-size: 1.3rem; }
 
 .kvota {
     --kvota-bg: var(--karta);
-    --kvota-boja: var(--mornar-800);
+    --kvota-boja: var(--naslov);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -313,16 +697,16 @@ h3 { font-size: 1.3rem; }
 }
 
 .kvota:hover {
-    border-color: var(--plava-500);
-    background: #f0f7fc;
+    border-color: var(--akcenat);
+    background: var(--kvota-hover);
     transform: translateY(-1px);
 }
 
 /* Izabrana kvota — puni akcenat, bez pomeranja, deluje "utisnuto" */
 .kvota.izabrana {
-    --kvota-bg: var(--plava-500);
+    --kvota-bg: var(--povrsina-akcenat);
     --kvota-boja: #fff;
-    border-color: var(--mornar-700);
+    border-color: var(--povrsina-akcenat-jaka);
     transform: none;
     box-shadow: inset 0 2px 6px rgba(0, 7, 45, .28);
 }
@@ -335,8 +719,8 @@ h3 { font-size: 1.3rem; }
    belom polju (odnos 1.08:1, nečitljivo). Izabrana kvota zato pri prelasku
    samo malo potamni, i tako i dalje javlja da je dugme živo. */
 .kvota.izabrana:hover {
-    background: var(--mornar-700);
-    border-color: var(--mornar-800);
+    background: var(--povrsina-akcenat-jaka);
+    border-color: var(--povrsina-mornar);
 }
 
 .kvota:disabled,
@@ -354,7 +738,7 @@ h3 { font-size: 1.3rem; }
 /* Dugme "+N" koje otkriva ostale tipove igre - iscrtkana ivica ga vizuelno
    odvaja od pravih kvota, da se odmah vidi da klik ne ide na tiket */
 .kvota.dugme-prosiri-kvote {
-    --kvota-boja: var(--plava-500);
+    --kvota-boja: var(--akcenat);
     border-style: dashed;
     font-weight: 600;
 }
@@ -377,7 +761,7 @@ h3 { font-size: 1.3rem; }
 
 /* Kratko treperenje kad se kvota promeni — pažnja bez buke */
 @keyframes kvota-promena {
-    0%   { background: #fff6d9; }
+    0%   { background: var(--treperenje); }
     100% { background: var(--kvota-bg); }
 }
 .kvota.promenjena { animation: kvota-promena 1.2s ease-out; }
@@ -400,7 +784,7 @@ h3 { font-size: 1.3rem; }
 }
 
 .tiket-glava {
-    background: var(--mornar-800);
+    background: var(--povrsina-mornar);
     color: #fff;
     padding: .7rem .9rem;
     font-family: 'Barlow Condensed', sans-serif;
@@ -414,7 +798,7 @@ h3 { font-size: 1.3rem; }
 
 .tiket-glava .broj-parova {
     margin-left: auto;
-    background: var(--plava-500);
+    background: var(--povrsina-akcenat);
     border-radius: 999px;
     min-width: 1.5rem;
     height: 1.5rem;
@@ -429,7 +813,7 @@ h3 { font-size: 1.3rem; }
 .tiket-zub {
     height: 7px;
     background:
-        radial-gradient(circle at 5px 0, transparent 5px, var(--mornar-800) 5px)
+        radial-gradient(circle at 5px 0, transparent 5px, var(--povrsina-mornar) 5px)
         repeat-x;
     background-size: 10px 7px;
     transform: scaleY(-1);
@@ -451,7 +835,7 @@ h3 { font-size: 1.3rem; }
     font-size: .82rem;
     letter-spacing: .06em;
     text-transform: uppercase;
-    color: var(--plava-500);
+    color: var(--akcenat);
 }
 
 .tiket-stavka .kvota-vrednost { font-weight: 700; }
@@ -492,11 +876,11 @@ h3 { font-size: 1.3rem; }
     padding-top: .45rem;
     margin-top: .3rem;
     border-top: 1px solid var(--ivica-jaka);
-    color: var(--mornar-800);
+    color: var(--naslov);
     font-weight: 600;
 }
 
-.tiket-zbir .red.dobitak-red .vrednost { color: var(--plava-500); font-size: 1.18rem; }
+.tiket-zbir .red.dobitak-red .vrednost { color: var(--akcenat); font-size: 1.18rem; }
 
 .tiket-prazan {
     padding: 2rem 1rem;
@@ -523,17 +907,47 @@ h3 { font-size: 1.3rem; }
 .btn:active { transform: translateY(1px); }
 
 .btn-primary {
-    background: var(--plava-500);
-    border-color: var(--plava-500);
+    background: var(--povrsina-akcenat);
+    border-color: var(--povrsina-akcenat);
 }
 .btn-primary:hover,
 .btn-primary:focus {
-    background: var(--mornar-700);
-    border-color: var(--mornar-700);
+    background: var(--povrsina-akcenat-jaka);
+    border-color: var(--povrsina-akcenat-jaka);
 }
 
-.btn-outline-primary { color: var(--plava-500); border-color: var(--ivica-jaka); }
-.btn-outline-primary:hover { background: var(--plava-500); border-color: var(--plava-500); }
+.btn-outline-primary { color: var(--akcenat); border-color: var(--ivica-jaka); }
+.btn-outline-primary:hover { background: var(--povrsina-akcenat); border-color: var(--povrsina-akcenat); color: #fff; }
+
+/* Ostale outline varijante Bootstrap boji nepromenljivim vrednostima
+   (#6c757d, #dc3545, #198754). Sve tri na tamnoj kartici daju oko 3.9:1,
+   ispod praga za tekst, pa preuzimaju naše tokene — koji su mereni u obe
+   teme. Zelena i crvena ovde ne znače ishod nego posledicu radnje
+   (brisanje, zaključivanje), pa nose semantičke tonove namerno. */
+.btn-outline-secondary { color: var(--prigusen); border-color: var(--ivica-jaka); }
+.btn-outline-secondary:hover { background: var(--povrsina-mornar); border-color: var(--povrsina-mornar); color: #fff; }
+
+.btn-outline-danger { color: var(--gubitak); border-color: var(--gubitak-ivica); }
+.btn-outline-danger:hover { background: var(--povrsina-gubitak); border-color: var(--povrsina-gubitak); color: #fff; }
+
+.btn-outline-success { color: var(--dobitak); border-color: var(--dobitak-ivica); }
+.btn-outline-success:hover { background: var(--povrsina-dobitak); border-color: var(--povrsina-dobitak); color: #fff; }
+
+/* Bootstrap-ovo #ffc107 na beloj podlozi daje 1.63:1 — praktično nevidljivo.
+   Dugme "Blokiraj" u spisku korisnika je baš takvo, a nije ni ukras nego
+   radnja koja menja tuđi nalog. */
+.btn-outline-warning { color: var(--ceka); border-color: var(--ceka-ivica); }
+.btn-outline-warning:hover { background: var(--ceka); border-color: var(--ceka); color: #fff; }
+
+/* Onemogućeno dugme: Bootstrap za njega drži zasebnu boju (--bs-btn-disabled-color)
+   i pravilo .btn:disabled, koje je specifičnije od pravila iznad, pa bi inače
+   ostalo na svojoj vrednosti. WCAG onemogućene kontrole izuzima od praga
+   kontrasta, ali ako već stoje pored živih, ne treba da odudaraju bojom. */
+.btn-outline-secondary:disabled { --bs-btn-disabled-color: var(--prigusen); }
+.btn-outline-danger:disabled { --bs-btn-disabled-color: var(--gubitak); }
+.btn-outline-success:disabled { --bs-btn-disabled-color: var(--dobitak); }
+.btn-outline-warning:disabled { --bs-btn-disabled-color: var(--ceka); }
+.btn-outline-primary:disabled { --bs-btn-disabled-color: var(--akcenat); }
 
 /* Glavno dugme sistema — nosi kosi gradijent palete */
 .btn-uplati {
@@ -547,17 +961,48 @@ h3 { font-size: 1.3rem; }
     box-shadow: 0 2px 10px rgba(10, 36, 114, .3);
 }
 .btn-uplati:hover {
-    background: var(--mornar-800);
+    background: var(--povrsina-mornar);
     color: #fff;
     box-shadow: 0 4px 14px rgba(10, 36, 114, .38);
 }
+/* Onemogućeno glavno dugme. Belo slovo na --ivica-jaka davalo je u svetloj
+   temi 1.60:1 — natpis se prosto nije video, pa igrač nije znao ni šta to
+   dugme radi. Sada nosi boju teksta (10.57:1 u svetloj, 8.26:1 u tamnoj), a
+   da je nedostupno javljaju siva podloga, izostanak senke i kursor. */
 .btn-uplati:disabled {
     background: var(--ivica-jaka);
-    color: #fff;
+    color: var(--tekst);
     box-shadow: none;
+    cursor: not-allowed;
 }
 
 .btn:focus-visible { outline: 2px solid var(--plava-400); outline-offset: 2px; }
+
+/* Vrteška na dugmetu dok traje poziv (js/ucitavanje.js). Nasleđuje boju
+   slova dugmeta, pa radi i na punom i na outline dugmetu, i u obe teme. */
+.vrteska {
+    display: inline-block;
+    width: .85em;
+    height: .85em;
+    margin-right: .45em;
+    vertical-align: -.1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: vrteska-okret .7s linear infinite;
+}
+
+@keyframes vrteska-okret { to { transform: rotate(360deg); } }
+
+/* Uz smanjeno kretanje vrteška ne rotira, nego samo pulsira providnošću —
+   poruka ostaje, a pokreta nema (blok @media prefers-reduced-motion na dnu
+   fajla ionako gasi trajanje animacija, pa se ovde menja i sam oblik) */
+@media (prefers-reduced-motion: reduce) {
+    .vrteska { animation: none; opacity: .6; }
+}
+
+/* Onemogućeno dugme dok se čeka odgovor — vidi se da je van domašaja */
+.btn[aria-busy="true"] { opacity: .75; cursor: progress; }
 
 /* =====================================================================
    STATUSI — JEDINO mesto gde se koriste zelena i crvena.
@@ -580,9 +1025,9 @@ h3 { font-size: 1.3rem; }
     border: 1px solid transparent;
 }
 
-.status-aktivan    { background: var(--ceka-bg);    color: var(--ceka);    border-color: #f0dcb4; }
-.status-dobitan    { background: var(--dobitak-bg); color: var(--dobitak); border-color: #b8e0cd; }
-.status-gubitan    { background: var(--gubitak-bg); color: var(--gubitak); border-color: #f0c5c1; }
+.status-aktivan    { background: var(--ceka-bg);    color: var(--ceka);    border-color: var(--ceka-ivica); }
+.status-dobitan    { background: var(--dobitak-bg); color: var(--dobitak); border-color: var(--dobitak-ivica); }
+.status-gubitan    { background: var(--gubitak-bg); color: var(--gubitak); border-color: var(--gubitak-ivica); }
 .status-storniran  { background: var(--papir);      color: var(--prigusen); border-color: var(--ivica-jaka); }
 
 /* Statusi stavki i naloga koriste isti rečnik boja */
@@ -596,16 +1041,16 @@ h3 { font-size: 1.3rem; }
 
 /* Oznaka sopstvenog naloga u spisku korisnika. Nije ishod ni stanje, pa ne
    uzima ni zelenu ni crvenu - nosi plavu iz osnovne palete. */
-.status-ja { background: rgba(14, 107, 168, .10); color: var(--plava-500); border-color: rgba(14, 107, 168, .28); }
+.status-ja { background: var(--akcenat-slab); color: var(--akcenat); border-color: var(--akcenat-ivica); }
 
 /* Statusi događaja. Zelena i crvena ovde ne dolaze u obzir - događaj sam po
    sebi nije ni dobitak ni gubitak. Razlikuju se plavom (u ponudi, prima se
    tiket), žutom (počeo, čeka se rezultat) i neutralnom (obrađen); otkazan
    nosi isprekidanu ivicu, pa se od završenog razlikuje i bez oslanjanja na
    boju. */
-.status-najavljen { background: rgba(14, 107, 168, .10); color: var(--plava-500);  border-color: rgba(14, 107, 168, .28); }
-.status-u_toku    { background: var(--ceka-bg);          color: var(--ceka);       border-color: #f0dcb4; }
-.status-zavrsen   { background: var(--papir);            color: var(--mornar-700); border-color: var(--ivica-jaka); }
+.status-najavljen { background: var(--akcenat-slab); color: var(--akcenat);  border-color: var(--akcenat-ivica); }
+.status-u_toku    { background: var(--ceka-bg);          color: var(--ceka);       border-color: var(--ceka-ivica); }
+.status-zavrsen   { background: var(--papir);            color: var(--oznaka); border-color: var(--ivica-jaka); }
 .status-otkazan   { background: var(--papir);            color: var(--prigusen);   border-color: var(--ivica-jaka); border-style: dashed; }
 
 /* Stanja redova u pregledu uvoza sa API-ja (operater/uvoz.php). Zelena i
@@ -615,10 +1060,10 @@ h3 { font-size: 1.3rem; }
      žuta     — traži odluku pre upisa
      neutral  — ne ulazi (isprekidana ivica kad nešto nedostaje, puna kad je
                 red uredan ali ga već imamo) */
-.status-uvoz-spreman        { background: rgba(14, 107, 168, .10); color: var(--plava-500);  border-color: rgba(14, 107, 168, .28); }
-.status-uvoz-moguc_duplikat { background: var(--ceka-bg);          color: var(--ceka);       border-color: #f0dcb4; }
-.status-uvoz-nepoznat_tim   { background: var(--ceka-bg);          color: var(--ceka);       border-color: #f0dcb4; }
-.status-uvoz-duplikat       { background: var(--papir);            color: var(--mornar-700); border-color: var(--ivica-jaka); }
+.status-uvoz-spreman        { background: var(--akcenat-slab); color: var(--akcenat);  border-color: var(--akcenat-ivica); }
+.status-uvoz-moguc_duplikat { background: var(--ceka-bg);          color: var(--ceka);       border-color: var(--ceka-ivica); }
+.status-uvoz-nepoznat_tim   { background: var(--ceka-bg);          color: var(--ceka);       border-color: var(--ceka-ivica); }
+.status-uvoz-duplikat       { background: var(--papir);            color: var(--oznaka); border-color: var(--ivica-jaka); }
 .status-uvoz-bez_kvota      { background: var(--papir);            color: var(--prigusen);   border-color: var(--ivica-jaka); border-style: dashed; }
 .status-uvoz-proslo         { background: var(--papir);            color: var(--prigusen);   border-color: var(--ivica-jaka); border-style: dashed; }
 .status-uvoz-neispravan     { background: var(--papir);            color: var(--prigusen);   border-color: var(--ivica-jaka); border-style: dashed; }
@@ -657,7 +1102,7 @@ h3 { font-size: 1.3rem; }
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--mornar-800);
+    color: var(--naslov);
     font-variant-numeric: tabular-nums;
 }
 
@@ -681,7 +1126,7 @@ h3 { font-size: 1.3rem; }
 }
 
 .table > thead th {
-    background: var(--mornar-800);
+    background: var(--povrsina-mornar);
     color: #fff;
     font-family: 'Barlow Condensed', sans-serif;
     font-weight: 600;
@@ -694,7 +1139,7 @@ h3 { font-size: 1.3rem; }
 }
 
 .table > tbody td { padding: .55rem .7rem; vertical-align: middle; }
-.table > tbody tr:hover { background: #f7f9fd; }
+.table > tbody tr:hover { background: var(--red-hover); }
 .table td.broj, .table td.iznos { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* =====================================================================
@@ -707,7 +1152,7 @@ h3 { font-size: 1.3rem; }
     letter-spacing: .04em;
     text-transform: uppercase;
     font-size: .87rem;
-    color: var(--mornar-700);
+    color: var(--oznaka);
     margin-bottom: .25rem;
 }
 
@@ -718,8 +1163,8 @@ h3 { font-size: 1.3rem; }
 }
 
 .form-control:focus, .form-select:focus {
-    border-color: var(--plava-500);
-    box-shadow: 0 0 0 3px rgba(14, 107, 168, .16);
+    border-color: var(--akcenat);
+    box-shadow: 0 0 0 3px var(--fokus-prsten);
 }
 
 .form-control.is-invalid { border-color: var(--gubitak); }
@@ -730,7 +1175,7 @@ h3 { font-size: 1.3rem; }
 .pregled-ikonice {
     background: var(--papir);
     border-color: var(--ivica-jaka);
-    color: var(--mornar-800);
+    color: var(--naslov);
     min-width: 2.9rem;
     justify-content: center;
     font-size: 1.1rem;
@@ -750,7 +1195,7 @@ h3 { font-size: 1.3rem; }
 .prikazi-lozinku:focus {
     background: var(--papir);
     border-color: var(--ivica-jaka);
-    color: var(--mornar-800);
+    color: var(--naslov);
 }
 
 /* Padajući meniji u filteru ponude. Pregledač im širinu računa po najdužoj
@@ -778,10 +1223,21 @@ h3 { font-size: 1.3rem; }
     padding: .7rem .9rem;
 }
 
-.alert-success { background: var(--dobitak-bg); border-color: var(--dobitak); color: #0a5c3e; }
-.alert-danger  { background: var(--gubitak-bg); border-color: var(--gubitak); color: #8a1c16; }
-.alert-warning { background: var(--ceka-bg);    border-color: var(--ceka);    color: #7d5206; }
-.alert-info    { background: #e7f1f9;           border-color: var(--plava-500); color: var(--mornar-700); }
+.alert-success { background: var(--dobitak-bg); border-color: var(--dobitak); color: var(--dobitak-tekst); }
+.alert-danger  { background: var(--gubitak-bg); border-color: var(--gubitak); color: var(--gubitak-tekst); }
+.alert-warning { background: var(--ceka-bg);    border-color: var(--ceka);    color: var(--ceka-tekst); }
+.alert-info    { background: var(--info-bg);    border-color: var(--akcenat); color: var(--info-tekst); }
+
+/* .alert-secondary koristi Bootstrap-ove nepromenljive sive (#e2e3e5 podloga,
+   #41464b slovo). U tamnoj temi ostaje svetla mrlja, a i u svetloj joj link
+   pada na 3.50:1. Preuzima naše neutrale, kao i ostale poruke. */
+.alert-secondary {
+    background: var(--papir);
+    border-color: var(--ivica-jaka);
+    color: var(--tekst);
+    --bs-alert-link-color: var(--akcenat-hover);
+}
+.alert-secondary a { color: var(--akcenat); }
 
 /* =====================================================================
    STATISTIKA (admin)
@@ -808,7 +1264,7 @@ h3 { font-size: 1.3rem; }
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 2rem;
     font-weight: 700;
-    color: var(--mornar-800);
+    color: var(--naslov);
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
 }
@@ -859,9 +1315,81 @@ h3 { font-size: 1.3rem; }
 .legenda-grafikona .broj { font-weight: 600; }
 .legenda-grafikona .udeo { color: var(--prigusen); min-width: 2.8rem; text-align: right; }
 
+/* =====================================================================
+   ZAGLAVLJE STRANICE
+
+   Većina stranica ima samo <h1 class="mb-4">. Novije su uz naslov dobile i
+   podnaslov i link za povratak, pa su razmak počele da slažu Bootstrap
+   klasama — negde mb-3, negde mb-4, uz dvostruki procep kad iza podnaslova
+   dođe još i dugme. Razmak zato drži ova klasa: ukupan razmak ispod celog
+   zaglavlja je 1.5rem, isto koliko daje mb-4 na ostalim stranama.
+   ===================================================================== */
+
+.zaglavlje-strane { margin-bottom: 1.5rem; }
+.zaglavlje-strane > h1 { margin-bottom: .2rem; }
+.zaglavlje-strane > .podnaslov {
+    color: var(--prigusen);
+    max-width: 62ch;
+    margin-bottom: 0;
+}
+.zaglavlje-strane > .nazad { display: inline-block; margin-top: .8rem; }
+
+/* Ćelija sa akcijama u tabeli: kontrole u jednom redu, poravnate desno i sa
+   istim razmakom kao svuda. Bez ovoga se razmak oslanjao na razmak između
+   inline elemenata, koji zavisi od preloma u samom HTML-u. */
+.akcije-celija {
+    display: flex;
+    /* nowrap: dugme i meni sa tri tačke idu jedno pored drugog, ma koliko
+       kolona bila uska. Tabela je u .table-responsive i tada se pomera
+       vodoravno — bolje nego da se dve kontrole slože jedna ispod druge i
+       udvostruče visinu svakog reda. */
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: .35rem;
+    white-space: nowrap;
+}
+
+/* Dugme sa tri tačke — nosi samo ikonicu, pa mu ne trebaju razmak između
+   slova ni široka unutrašnja margina koje .btn inače daje tekstu */
+.dugme-akcija {
+    letter-spacing: 0;
+    padding: .25rem .45rem;
+    line-height: 1;
+}
+
+/* Brisanje u padajućem meniju: crveno, i odvojeno crtom iznad, da se ne
+   pogodi slučajno umesto izmene */
+.dropdown-item.stavka-brisanje { color: var(--gubitak); width: 100%; text-align: left; }
+.dropdown-item.stavka-brisanje:hover { background: var(--gubitak-bg); color: var(--gubitak-tekst); }
+
+/* Natpis ispred grupe dugmadi ("Poslednjih 50 / 100 / 200") — isti rez i
+   težina kao natpisi polja, da red deluje kao jedna kontrola */
+.oznaka-grupe {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    font-size: .87rem;
+    color: var(--oznaka);
+    white-space: nowrap;
+}
+
+/* Aktivno dugme u grupi: Bootstrap-ovo .active nosi sopstvenu sivu, koja se
+   posle preuzimanja outline varijanti više ne slaže sa ostatkom */
+.btn-group .btn-outline-secondary.active {
+    background: var(--povrsina-mornar);
+    border-color: var(--povrsina-mornar);
+    color: #fff;
+}
+
+/* Duge putanje i ključevi u <code> (npr. adrese stranica u statistici) ne
+   smeju da razvuku tabelu — prelamaju se bilo gde ako ne staju */
+code { overflow-wrap: anywhere; }
+
 /* Log — jedino mesto sa monospace fontom, jer su redovi poravnati */
 .log-ispis {
-    background: var(--mornar-900);
+    background: var(--povrsina-duboka);
     color: #c8d4e8;
     font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
     font-size: .82rem;
@@ -879,7 +1407,7 @@ h3 { font-size: 1.3rem; }
    ===================================================================== */
 
 .podnozje {
-    background: var(--mornar-900);
+    background: var(--povrsina-duboka);
     color: rgba(255, 255, 255, .55);
     padding: 1.6rem 0;
     margin-top: 3rem;
@@ -891,9 +1419,12 @@ h3 { font-size: 1.3rem; }
 .podnozje a { color: rgba(255, 255, 255, .78); text-decoration: none; }
 .podnozje a:hover { color: #fff; text-decoration: underline; }
 
+/* Napomena da je reč o simulaciji stoji na svakoj strani, pa mora i da se
+   pročita: providnost .38 davala je 3.44:1 na podlozi podnožja, ispod praga.
+   Na .55 je 6.14:1, a i dalje je tiša od reda iznad. */
 .podnozje .napomena {
     font-size: .8rem;
-    color: rgba(255, 255, 255, .38);
+    color: rgba(255, 255, 255, .55);
     margin-top: .5rem;
 }
 
@@ -907,7 +1438,7 @@ h3 { font-size: 1.3rem; }
     color: var(--prigusen);
 }
 .prazno i { font-size: 2.4rem; color: var(--ivica-jaka); display: block; margin-bottom: .6rem; }
-.prazno .naslov-praznog { font-family: 'Barlow Condensed', sans-serif; font-size: 1.15rem; color: var(--mornar-800); }
+.prazno .naslov-praznog { font-family: 'Barlow Condensed', sans-serif; font-size: 1.15rem; color: var(--naslov); }
 
 /* =====================================================================
    RESPONZIVNOST I PRISTUPAČNOST
@@ -939,7 +1470,7 @@ h3 { font-size: 1.3rem; }
     position: absolute;
     left: -999px;
     top: .5rem;
-    background: var(--plava-500);
+    background: var(--povrsina-akcenat);
     color: #fff;
     padding: .5rem .9rem;
     border-radius: var(--radijus-sm);

@@ -5,10 +5,16 @@
 // posle includes/autentifikacija.php i eventualne provere zahtevaj_ulogu().
 
 require_once __DIR__ . '/autentifikacija.php';
+require_once __DIR__ . '/glava.php';
 
-// Stranica pre uključivanja može postaviti $naslov_stranice; ako to ne uradi,
-// koristi se podrazumevani naslov
-$naslov_stranice = $naslov_stranice ?? 'Kladionica';
+// Stranica pre uključivanja mora postaviti $naslov_stranice. Podrazumevana
+// vrednost postoji samo da naslov nikad ne ostane prazan - svaka stranica
+// treba da kaže šta je, jer je taj tekst i naslov kartice u pregledaču i
+// tekst koji se vidi kad se link nalepi negde.
+$naslov_stranice = $naslov_stranice ?? 'Ponuda';
+
+// Stranica sme postaviti i sopstveni opis; ako ne, koristi se opšti
+$opis_stranice = $opis_stranice ?? null;
 
 // Evidentira se svaki pristup stranici - i gosta i prijavljenog korisnika -
 // i u tekstualni log fajl i u tabelu pristup_log, kao osnova za statistiku
@@ -36,15 +42,24 @@ if (trenutna_uloga() === 'igrac' && isset($_SESSION['korisnik_id'])) {
     }
 }
 
-// Ispisuje jednu stavku glavne navigacije. Stavka koja pokazuje na stranicu
-// koja se upravo prikazuje dobija klasu .active (stil je istakne tankom crtom
-// ispod) i atribut aria-current, po kome čitači ekrana javljaju gde se
-// korisnik nalazi. Poređenje ide preko PHP_SELF, jer se isti naziv fajla
-// javlja u više foldera (npr. transakcije.php i kod igrača i kod admina).
+// Da li data adresa odgovara stranici koja se upravo prikazuje. Poređenje ide
+// preko PHP_SELF, jer se isti naziv fajla javlja u više foldera (npr.
+// transakcije.php i kod igrača i kod admina). Deli je i stavka_menija() i
+// grupa_menija(), da se grupa označi aktivnom po istom pravilu kao pojedinačna
+// stavka.
+function stavka_aktivna(string $adresa): bool
+{
+    return ($_SERVER['PHP_SELF'] ?? '') === (KORENSKI_URL . $adresa);
+}
+
+// Ispisuje jednu stavku glavne navigacije, van grupe. Stavka koja pokazuje na
+// stranicu koja se upravo prikazuje dobija klasu .active (stil je istakne
+// tankom crtom ispod) i atribut aria-current, po kome čitači ekrana javljaju
+// gde se korisnik nalazi.
 function stavka_menija(string $adresa, string $naziv): void
 {
     $puna_adresa = KORENSKI_URL . $adresa;
-    $aktivna = ($_SERVER['PHP_SELF'] ?? '') === $puna_adresa;
+    $aktivna = stavka_aktivna($adresa);
 
     $klasa = $aktivna ? 'nav-link active' : 'nav-link';
     $aria = $aktivna ? ' aria-current="page"' : '';
@@ -54,16 +69,69 @@ function stavka_menija(string $adresa, string $naziv): void
         . bezbedno($naziv)
         . '</a></li>';
 }
+
+// Ispisuje grupu stavki kao padajući meni. $stavke je niz parova
+// [adresa, naziv], istog oblika kakav stavka_menija() prima pojedinačno.
+//
+// Grupa dobija klasu .active (istu tanku crtu kao pojedinačna stavka) čim je
+// BILO KOJA njena stavka na trenutnoj stranici - korisnik tako vidi u kom je
+// delu menija, i kad je unutar grupe otvorio treću stavku, a ne prvu.
+// aria-current="page" i dalje nosi isključivo ta jedna stvarna stavka: da ga
+// dobije i sam naslov grupe, čitač ekrana bi javio da je cela grupa "trenutna
+// stranica", što nije tačno - grupa nije stranica, ona samo sadrži jednu.
+//
+// Otvaranje ide na tri načina, namerno slojevito:
+//   1. bez JavaScripta: :hover i :focus-within u style.css otkrivaju meni,
+//      jer Bootstrap .dropdown već ima position:relative iz svog CSS-a, pa
+//      apsolutno pozicioniran .dropdown-menu ispravno padne ispod bez Poppera;
+//   2. sa JavaScriptom, na širem ekranu: klik i tastatura (strelice, Escape,
+//      Tab) rade kroz Bootstrap-ov ugrađeni dropdown iz bootstrap.bundle.min.js
+//      - ništa od toga ovde nije ručno pisano;
+//   3. sa JavaScriptom, u sažetom (mobilnom) meniju: isti Bootstrap mehanizam,
+//      ali se meni prikazuje kao ugnežđena lista u toku teksta, ne kao popup
+//      preko sadržaja - to obezbeđuje CSS (position: static ispod 992px),
+//      uz data-bs-display="static" koje Bootstrap-u kaže da ne pokreće Popper.
+function grupa_menija(string $naziv_grupe, array $stavke): void
+{
+    $aktivna_grupa = false;
+    foreach ($stavke as [$adresa, $naziv_stavke]) {
+        if (stavka_aktivna($adresa)) {
+            $aktivna_grupa = true;
+            break;
+        }
+    }
+
+    // Jedinstven id za aria-labelledby - funkcija se poziva više puta po strani
+    static $brojac_grupa = 0;
+    $id_toggle = 'meni-grupa-' . (++$brojac_grupa);
+
+    $klasa_toggle = 'nav-link dropdown-toggle' . ($aktivna_grupa ? ' active' : '');
+
+    echo '<li class="nav-item dropdown">';
+    echo '<a class="' . $klasa_toggle . '" href="#" id="' . bezbedno($id_toggle) . '" role="button"'
+        . ' data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">'
+        . bezbedno($naziv_grupe) . '</a>';
+    echo '<ul class="dropdown-menu" aria-labelledby="' . bezbedno($id_toggle) . '">';
+
+    foreach ($stavke as [$adresa, $naziv_stavke]) {
+        $puna_adresa = KORENSKI_URL . $adresa;
+        $aktivna = stavka_aktivna($adresa);
+        $klasa = 'dropdown-item' . ($aktivna ? ' active' : '');
+        $aria = $aktivna ? ' aria-current="page"' : '';
+
+        echo '<li><a class="' . $klasa . '"' . $aria . ' href="' . bezbedno($puna_adresa) . '">'
+            . bezbedno($naziv_stavke) . '</a></li>';
+    }
+
+    echo '</ul></li>';
+}
 ?>
 <!DOCTYPE html>
-<html lang="sr">
+<?php // Tema se upisuje na <html> pre bilo kakvog ispisa, da tamna strana ne
+      // bljesne belo dok se stilovi učitavaju ?>
+<html lang="sr"<?= atributi_teme() ?>>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= bezbedno($naslov_stranice) ?> — Kladionica</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="<?= KORENSKI_URL ?>/css/style.css" rel="stylesheet">
+    <?php ispisi_glavu($naslov_stranice, $opis_stranice); ?>
 </head>
 <body class="d-flex flex-column min-vh-100">
 
@@ -85,33 +153,47 @@ function stavka_menija(string $adresa, string $naziv): void
                 <?php stavka_menija('/index.php', 'Ponuda'); ?>
 
                 <?php if (trenutna_uloga() === 'igrac'): ?>
+                    <?php // Samo četiri stavke - ostaju ravne, grupisanje bi ovde bilo suvišno ?>
                     <?php stavka_menija('/igrac/uplata.php', 'Uplata sredstava'); ?>
                     <?php stavka_menija('/igrac/tiketi.php', 'Moji tiketi'); ?>
                     <?php stavka_menija('/igrac/transakcije.php', 'Transakcije'); ?>
                     <?php stavka_menija('/igrac/profil.php', 'Profil'); ?>
                 <?php elseif (trenutna_uloga() === 'operater'): ?>
-                    <?php stavka_menija('/operater/sportovi.php', 'Sportovi'); ?>
-                    <?php stavka_menija('/operater/lige.php', 'Lige'); ?>
-                    <?php stavka_menija('/operater/timovi.php', 'Timovi'); ?>
-                    <?php stavka_menija('/operater/tipovi_igre.php', 'Tipovi igre'); ?>
-                    <?php stavka_menija('/operater/dogadjaji.php', 'Događaji i kvote'); ?>
-                    <?php stavka_menija('/operater/rezultati.php', 'Rezultati'); ?>
+                    <?php grupa_menija('Utakmice', [
+                        ['/operater/dogadjaji.php', 'Događaji i kvote'],
+                        ['/operater/rezultati.php', 'Rezultati'],
+                        ['/operater/uvoz.php', 'Uvoz sa API-ja'],
+                    ]); ?>
+                    <?php grupa_menija('Šifarnici', [
+                        ['/operater/sportovi.php', 'Sportovi'],
+                        ['/operater/lige.php', 'Lige'],
+                        ['/operater/timovi.php', 'Timovi'],
+                        ['/operater/tipovi_igre.php', 'Tipovi igre'],
+                        ['/operater/api_lige.php', 'Mapiranje liga'],
+                    ]); ?>
                     <?php stavka_menija('/operater/dokumenta.php', 'Dokumenta'); ?>
-                    <?php // Pomoćni alat. CRUD nad api_liga stoji jedan klik dalje, sa same
-                          // stranice za uvoz, da se glavni meni ne razvuče preko dva reda. ?>
-                    <?php stavka_menija('/operater/uvoz.php', 'Uvoz sa API-ja'); ?>
                 <?php elseif (trenutna_uloga() === 'admin'): ?>
-                    <?php stavka_menija('/admin/korisnici.php', 'Korisnici'); ?>
-                    <?php stavka_menija('/admin/uloge.php', 'Uloge'); ?>
-                    <?php stavka_menija('/admin/tiketi.php', 'Tiketi'); ?>
-                    <?php stavka_menija('/admin/transakcije.php', 'Transakcije'); ?>
-                    <?php stavka_menija('/admin/dokumenta.php', 'Dokumenti'); ?>
-                    <?php stavka_menija('/admin/logovi.php', 'Logovi'); ?>
-                    <?php stavka_menija('/admin/statistika.php', 'Statistika'); ?>
+                    <?php grupa_menija('Korisnici', [
+                        ['/admin/korisnici.php', 'Korisnici'],
+                        ['/admin/uloge.php', 'Uloge'],
+                        ['/admin/dokumenta.php', 'Dokumenti'],
+                    ]); ?>
+                    <?php grupa_menija('Poslovanje', [
+                        ['/admin/tiketi.php', 'Tiketi'],
+                        ['/admin/transakcije.php', 'Transakcije'],
+                    ]); ?>
+                    <?php grupa_menija('Nadzor', [
+                        ['/admin/statistika.php', 'Statistika'],
+                        ['/admin/logovi.php', 'Logovi'],
+                    ]); ?>
                 <?php endif; ?>
             </ul>
 
             <ul class="navbar-nav align-items-lg-center">
+                <li class="nav-item me-lg-2 my-2 my-lg-0">
+                    <?php prekidac_teme(generisi_csrf_token()); ?>
+                </li>
+
                 <?php if (korisnik_prijavljen()): ?>
                     <?php if ($stanje_u_navigaciji !== null): ?>
                         <li class="nav-item me-lg-3 my-2 my-lg-0">

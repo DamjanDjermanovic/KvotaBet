@@ -20,6 +20,12 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<?php // Stanje učitavanja na dugmadima ide na svaku stranu, jer ga koriste i
+      // tiket (AJAX) i uvoz ponude (obična forma koja dugo putuje). Učitava se
+      // pre ostalih skripti, da im funkcija bude na raspolaganju. ?>
+<script src="<?= KORENSKI_URL ?>/js/ucitavanje.js"></script>
+
 <?php foreach ($dodatne_skripte ?? [] as $skripta): ?>
 <script src="<?= KORENSKI_URL ?>/js/<?= bezbedno($skripta) ?>"></script>
 <?php endforeach; ?>

@@ -127,7 +127,7 @@ try {
 }
 
 $csrf_token = generisi_csrf_token();
-$naslov_stranice = 'Logovi';
+$naslov_stranice = 'Log fajlovi';
 require_once __DIR__ . '/../includes/zaglavlje.php';
 ?>
 
@@ -149,11 +149,22 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
         </li>
     </ul>
 
-    <div class="btn-group btn-group-sm" role="group">
-        <?php foreach ($dozvoljeni_brojevi as $broj): ?>
-            <a href="<?= KORENSKI_URL ?>/admin/logovi.php?log=<?= $koji_log ?>&broj=<?= $broj ?>"
-               class="btn btn-outline-secondary <?= $broj_linija === $broj ? 'active' : '' ?>">poslednjih <?= $broj ?></a>
-        <?php endforeach; ?>
+    <?php
+    // Natpis "poslednjih 50" na svakom od četiri dugmeta činio je grupu širokom
+    // preko 400px, pa je na telefonu izlazila iz ekrana. Reč "poslednjih" se
+    // sada kaže jednom, ispred grupe, a na samim dugmadima ostaje samo broj -
+    // čitačima ekrana pun tekst i dalje stiže kroz aria-label.
+    ?>
+    <div class="d-flex align-items-center gap-2">
+        <span class="oznaka-grupe">Poslednjih</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Broj redova za prikaz">
+            <?php foreach ($dozvoljeni_brojevi as $broj): ?>
+                <a href="<?= KORENSKI_URL ?>/admin/logovi.php?log=<?= $koji_log ?>&broj=<?= $broj ?>"
+                   class="btn btn-outline-secondary <?= $broj_linija === $broj ? 'active' : '' ?>"
+                   aria-label="Prikaži poslednjih <?= $broj ?> redova"
+                   <?= $broj_linija === $broj ? 'aria-current="true"' : '' ?>><?= $broj ?></a>
+            <?php endforeach; ?>
+        </div>
     </div>
 </div>
 
