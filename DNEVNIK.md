@@ -820,3 +820,240 @@ završetku):
 
 Oba testa: SVE OK. Sav test-podaci (događaj, liga, timovi, kvote, tiketi,
 korisnik, transakcije) obrisan na kraju istog skripta.
+
+---
+
+## Uvoz ponude sa The Odds API-ja (2026-08-26)
+
+Operater do sada svaku utakmicu i svaku kvotu kuca ručno. Dodat je pomoćni alat
+koji ih preuzima sa `the-odds-api.com`. **Ručni unos nije ni dodirnut** i mora
+raditi bez interneta, bez ključa i sa praznom tabelom mapiranja — to je i
+zapisano u `CLAUDE.md` kao pravilo, uz zabranu da bilo koja druga stranica
+uključuje `includes/odds_api.php`.
+
+### Šta je dodato
+
+- `config/api.primer.php` — šablon sa **praznim** ključem, ide u git.
+  `config/api.php` je kopija sa pravim ključem i stoji u `.gitignore`.
+- `includes/odds_api.php` — poziv servisa preko cURL-a (timeout 8s) i keširanje.
+- `includes/uvoz.php` — pretvaranje odgovora u našu šemu, prepoznavanje
+  duplikata, povezivanje timova, upis u bazu.
+- `operater/uvoz.php` — dvokoračna stranica (pregled, pa upis).
+- `operater/api_lige.php` — CRUD nad novom tabelom `api_liga`.
+- `baza/migracija_api.sql` — dopuna za bazu koja već postoji; u `schema.sql` je
+  isto to već ugrađeno (sada 14 tabela).
+
+### Dva koraka, jer se ništa ne sme upisati bez potvrde
+
+Klik na „Preuzmi“ **ne upisuje ništa** — samo prikaže tabelu pregleda sa
+utakmicama, kvotama i stanjem svakog reda. Tek „Sačuvaj u bazu“ upisuje ono što
+je operater ostavio čekirano.
+
+**Server ne veruje formi.** Iz forme stižu samo identifikatori čekiranih
+utakmica; vremena, timove i kvote server ponovo izračuna iz odgovora
+**pročitanog sa diska**. Isti `pripremi_pregled_uvoza()` radi i pregled i upis,
+pa se ono što operater vidi i ono što se upisuje ne mogu razići.
+
+Zbog toga u pregledu ni ne postoji polje za izmenu kvote — vrednost bi tada
+morala da stigne sa klijenta. Kvota se posle upisa menja tamo gde se i inače
+menja, u `operater/kvote.php`.
+
+### Keširanje — kvota je 500 poziva mesečno
+
+Svaki odgovor se snima u `kes/` kao JSON sa vremenskom oznakom i stanjem
+kredita. Ako je fajl mlađi od 30 minuta, „Preuzmi“ ga koristi i **poziv se
+uopšte ne šalje**; „Osveži sa servera“ uvek šalje nov. Traka iznad tabele
+prikazuje kad je keš napravljen i koliko je poziva ostalo (iz zaglavlja
+`x-requests-remaining`).
+
+Sam upis u bazu **nikad** ne poziva servis: čita isti keš, bez obzira na
+starost. To je odgovor koji je operater upravo pregledao, pa bi nov poziv i
+trošio kredit i mogao da mu ispod ruke promeni podatke.
+
+Dodato preko traženog: **ako poziv padne, a na disku postoji makar zastareo
+keš, prikazuje se on** uz jasno upozorenje. Stara ponuda je korisnija od prazne
+stranice, a operater vidi šta gleda.
+
+Cena poziva je (broj regiona × broj tržišta) = 1 × 2 = **2 kredita**. Spisak
+liga (`/sports`) se ne naplaćuje, ali se svejedno kešira na 24 sata i čita samo
+sa diska pri otvaranju stranice — stranica se ne sme oslanjati na mrežu da bi
+se iscrtala.
+
+### Mapiranje na postojeću šemu
+
+**Lige** — nova tabela `api_liga` (`api_kljuc` → `liga_id`), sa punim CRUD-om,
+jer zahtev 6 traži CRUD nad svakom tabelom. Ključ je `UNIQUE`: jedan ključ vodi
+u tačno jednu ligu, obrnuto ne mora (ista liga sme imati više ključeva).
+
+**Timovi** — ovde **nije** napravljena druga tabela, nego kolona
+`tim.api_naziv`. Razlog: veza je 1:1 sa timom i prirodno je njegov atribut, a
+tabela `tim` već ima CRUD, pa se polje odmah uređuje i briše kroz
+`operater/timovi.php` — bez još jedne stranice koja postoji samo da bi zahtev 6
+bio zadovoljen. Ograničenje je `UNIQUE (liga_id, api_naziv)`; MySQL dozvoljava
+više `NULL` vrednosti u `UNIQUE` ključu, pa svi timovi koji se nikad ne uvoze
+mirno stoje sa praznom kolonom (provereno: 7 timova sa `NULL` u istoj ligi
+prolazi, dva ista neprazna naziva ne prolaze).
+
+Tim se traži redom, od najpouzdanijeg ka najslabijem:
+
+1. tačno onaj naziv koji je operater sam povezao (`tim.api_naziv`),
+2. isti povezan naziv do razlike u velikim slovima i interpunkciji,
+3. naš naziv se poklapa sa nazivom kod servisa.
+
+Odluka operatera time uvek pobeđuje pogađanje. Normalizacija skida kvačice i
+interpunkciju („F.C. Köln“ = „FC Koln“), ali ne pokušava prevod — „Manchester
+United“ i „Mančester Junajted“ povezuje operater, jednim klikom iz pregleda.
+
+Povezivanje tima je namerno **odvojeno** od „Sačuvaj u bazu“: to je odluka o
+rečniku timova, a ne o ponudi, i tiče se svih budućih uvoza te lige.
+
+**Tržišta** — `h2h` daje 1/X/2 (ime domaćina, `Draw`, ime gosta), `totals` na
+liniji 2.5 daje `Under` → `0-2` i `Over` → `3+`. Druge linije (1.5, 3.5) se
+preskaču jer im u `tip_igre` nema para. Mapiranje ide **po oznaci unutar
+sporta**, ne po pretpostavci da je reč o fudbalu: košarka nema oznaku „X“, pa
+prosto ne dobija tu kvotu, i tabela pregleda za nju nema ni tu kolonu. GG i
+dupla šansa se u besplatnom nivou ne dobijaju — dopunjuju se postojećim
+dugmetom „Dodaj sve tipove“.
+
+**Kvota** je prosek svih kladionica koje su je ponudile, zaokružen na dve
+decimale. Prosek ispod 1.01 se odbacuje, jer bi pao na `CHECK` ograničenju baze
+i srušio celu transakciju uvoza.
+
+### Duplikati i stanja redova
+
+Duplikat je, po dogovoru, ista četvorka **(liga, domaćin, gost, vreme
+početka)** — takav red se preskače uz obaveštenje i nema ni kućicu za čekiranje.
+
+Uz to je dodato stanje **„moguć duplikat“**: isti timovi već imaju događaj tog
+dana, ali u drugo vreme. Po pravilu to nije duplikat (servis ume da pomeri
+satnicu već unete utakmice), pa se red ne odbija — ali se ni ne čekira sam od
+sebe. Odluku donosi operater.
+
+Sedam mogućih stanja reda i šta znače:
+
+| Stanje | Kućica | Zašto |
+|---|---|---|
+| `spreman` | čekirana | ući će u bazu |
+| `moguć duplikat` | prazna | isti par isti dan, drugo vreme |
+| `već postoji` | nema je | ista četvorka je već u bazi |
+| `nepoznat tim` | nema je | tim još nije povezan |
+| `bez kvota` | nema je | servis nije dao nijednu upotrebljivu kvotu |
+| `prošlo vreme` | nema je | pravilo 6 — na započet događaj se ne kladi |
+| `nečitljiv zapis` | nema je | odgovor servisa je nepotpun |
+
+Boje u `style.css` prate isti dogovor kao i drugde: zelena i crvena su rezervi-
+sane za dobitak i gubitak, pa stanja uvoza koriste plavu (ući će), žutu (traži
+odluku) i neutralnu (ne ulazi, isprekidana ivica kad nešto nedostaje).
+
+### Otpornost
+
+Nijedna funkcija u `odds_api.php` ne baca izuzetak i nijedna ne ispisuje ništa —
+svaka vraća niz sa `uspeh` i porukom na srpskom koju stranica sme da prikaže.
+Tehnički detalj (HTTP kod, odgovor servisa, cURL greška) ide isključivo u
+`logovi/greske.log`, i to **bez ključa**: u log odlazi samo putanja poziva, a
+nikad pun URL, u kom ključ stoji kao parametar.
+
+Upis izabranih utakmica ide u **jednoj transakciji** — ili uđu sve, ili nijedna.
+Duplikat je jedini izuzetak: on se preskače, a ne obara upis. Postojeći događaji
+te lige se pritom zaključavaju (`SELECT ... FOR UPDATE`), istim postupkom kojim
+faza 8 zaključava događaj pri obradi rezultata, pa dva istovremena uvoza iste
+lige ne mogu oba proći kroz proveru duplikata.
+
+### Otkriveno usput
+
+**1. PHP tiho pretvara numeričke stringove u cele brojeve kad su ključ niza.**
+Oznaka `'1'` u nizu kvota postaje ključ `1`. Slučajno je radilo, jer se ista
+pretvorba dešava i pri čitanju i pri upisu, pa su se dve strane poklapale — ali
+na prećutno pravilo se ne oslanja: obe strane se sada izričito svode na string.
+Otkriveno tako što je test poredio `array_keys()` strogim `===`.
+
+**2. Apache na ovoj mašini radi kao `daemon` i nije mogao da piše u `kes/`.**
+Folder je bio `damjan:damjan`, dok `logovi/` i `uploads/` odavno stoje sa grupom
+`daemon`. Posledica nije bila pad — preuzimanje je radilo, samo se keš nije
+snimao, pa bi **svako otvaranje trošilo kredit**. Greška je uredno završila u
+`greske.log`. Rešenje je jedna komanda, dopisana u `POKRETANJE.md` (na Windows
+XAMPP-u problem ne postoji). Uz to: ako se `kes/` obriše, `upisi_kes()` ga pravi
+iznova i sa njim upisuje i `.htaccess`, da keširani odgovori ne bi ostali
+dostupni kroz pregledač.
+
+**3. Ceo `config/` folder je bio dostupan kroz pregledač.** Dok PHP radi,
+otvaranje `config/baza.php` ne ispiše ništa, pa se to nije videlo. Ali fajl sa
+ključem i fajl sa lozinkom baze ne smeju da zavise od toga da li PHP radi —
+dodat je `config/.htaccess` sa `Require all denied`. `require_once` je pristup
+fajl sistemu i to ga ne dodiruje, što je i provereno: sve stranice i dalje rade,
+a `config/api.php`, `config/baza.php` i `config/konfiguracija.php` kroz
+pregledač daju 403.
+
+### Odluke koje vredi zapamtiti
+
+- U meni operatera je dodata samo stavka „Uvoz sa API-ja“; `api_lige.php` stoji
+  jedan klik dalje, sa same stranice za uvoz. Sa devet stavki bi se glavni meni
+  prelomio u dva reda, a mapiranje liga se dira jednom, pri podešavanju.
+- Uvoz upisuje `TRAG` u `greske.log` (koliko događaja i kvota, sa kog ključa) —
+  po tabeli `dogadjaj` se posle ne vidi da su redovi stigli sa servisa.
+- Brisanje mapiranja **ne dira** već uvezene događaje; oni su od trenutka upisa
+  obični redovi kao i svi ručno uneti.
+
+### Testirano
+
+Napravljen je **privremeni test server koji glumi The Odds API** (nije deo
+aplikacije, obrisan po završetku). Time je ceo lanac — cURL, zaglavlja, keš,
+pregled, upis — provučen kroz pravi HTTP, bez ključa i bez trošenja ijednog
+poziva iz mesečne kvote. Sedam pripremljenih utakmica pokriva svih sedam stanja
+reda iz tabele iznad.
+
+**42 provere nad `includes/odds_api.php`, sve prolaze**, uključujući: prosek
+kvota (1.80 + 1.90 → 1.85), zaokruživanje na dve decimale, odbacivanje proseka
+ispod 1.01, prevođenje vremena iz UTC u lokalno i leti i zimi, čišćenje naziva
+keš fajla (`../../etc/passwd` → `etcpasswd.json`), čitanje
+`x-requests-remaining`, i da svež keš znači **nula** novih poziva (brojano po
+zapisima test servera).
+
+Otpornost, svaka pojedinačno:
+
+| Slučaj | Ishod |
+|---|---|
+| HTTP 429 (potrošena kvota) | prazan niz + poruka o mesečnoj kvoti |
+| HTTP 401 (loš ključ) | poruka upućuje na `config/api.php`; odgovor servisa se ne prikazuje |
+| odgovor koji nije JSON | prazan niz + poruka, detalj u `greske.log` |
+| servis ćuti 12s | prekinuto na **8.0s**, poruka pominje 8 sekundi |
+| servis ugašen, keš postoji | prikazan zastareo keš uz upozorenje |
+| servis ugašen, keša nema | jasna poruka i predlog ručnog unosa |
+| ključ nije podešen | stranica to kaže i upućuje na ručni unos, ostatak aplikacije radi |
+| ključ u logu | ne pojavljuje se nijednom |
+
+Ceo tok kroz pravi Apache, sa privremenim operaterskim nalogom:
+
+- Preuzimanje → 7 utakmica, traka pokazuje vreme keša i **468** preostalih
+  poziva, „0 / 7 spremno“ jer timovi još nisu povezani.
+- „Arsenal“ je **prepoznat sam** (isti naziv u bazi); ostala tri tima ponuđena
+  za povezivanje. Jedan napravljen kao nov tim, dva povezana sa postojećim.
+- Posle povezivanja: „2 / 7 spremno“, a redovi su stali tačno na svoja stanja —
+  duplikat, moguć duplikat, dva spremna, bez kvota, prošlo vreme, nečitljiv.
+- **Slanje mimo forme** (duplikat + prošlo vreme + bez kvota + nečitljiv +
+  izmišljen identifikator): 12 događaja pre, **12 posle** — ništa nije upisano,
+  svaki red objašnjen svojom porukom.
+- Upis dve spremne utakmice: 2 događaja i 10 kvota, vrednosti tačno jednake
+  proseku (1.85 / 3.80 / 4.10 / 2.12 / 1.72), vreme prevedeno iz UTC u lokalno,
+  status `najavljen`, `kreirao_id` operatera.
+- Isti upis drugi put: **0 upisano**, obe prepoznate kao duplikat.
+- **Poništavanje transakcije**: privremeno dodato ograničenje baze koje odbija
+  jednu kvotu **druge** utakmice. Rezultat: prva utakmica, koja je već bila
+  upisana, poništena zajedno sa njom — 12 događaja pre, 12 posle, 0 kvota.
+  Korisnik je dobio razumljivu poruku, `SQLSTATE` je ostao u `greske.log`.
+- Uvezen događaj se pojavljuje u javnoj ponudi sa svojih 5 kvota (1/X/2 vidljive,
+  0-2 i 3+ iza dugmeta), a dugme „Dodaj sve tipove“ na njemu nudi tačno ona
+  četiri tipa koja servis ne daje (1X, 12, X2, GG). Posle njihovog dodavanja
+  događaj ima svih 9.
+- Ručni unos događaja i dalje radi neizmenjeno.
+- `kes/` i `config/` kroz pregledač vraćaju **403**.
+- Sve nove i izmenjene stranice: HTTP 200, bez ijednog `Fatal error`, `Warning`,
+  `Notice`, `Deprecated`, `SQLSTATE` ili putanje `/opt/lampp` u odgovoru.
+
+Baza je proverena u oba smera: potpuno svež `schema.sql` (14 tabela) i
+`migracija_api.sql` nad zatečenom bazom od 13 tabela. Sve na privremenoj bazi
+`kladionica_proba`, koja je obrisana.
+
+Po završetku obrisano: privremeni operaterski nalog, uvezeni i ručno uneti
+probni događaji, novonapravljeni tim, sva mapiranja, sve `api_naziv` vrednosti i
+keš fajlovi. U bazi su ostala zatečena 3 naloga, 12 događaja i 24 tima.

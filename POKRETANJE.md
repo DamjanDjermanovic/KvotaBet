@@ -12,7 +12,37 @@ Otvori `http://localhost/phpmyadmin`, idi na karticu **SQL** i izvrši sadržaj 
 `baza/schema.sql`. Skripta sama briše i pravi bazu `kladionica`, tako da se može
 pokrenuti više puta bez problema.
 
-Provera: u listi sa leve strane treba da se pojavi 13 tabela.
+Provera: u listi sa leve strane treba da se pojavi 14 tabela.
+
+Ako baza **već postoji** od ranije (13 tabela, bez `api_liga`), ne treba je praviti
+iznova — dovoljno je izvršiti `baza/migracija_api.sql`, koji samo dodaje tabelu
+`api_liga` i kolonu `tim.api_naziv` i ne dira nijedan postojeći podatak.
+
+## 2a. Uvoz ponude sa interneta (opciono)
+
+Operater može da preuzme utakmice i kvote sa servisa **the-odds-api.com** umesto da
+ih kuca. To je pomoćni alat: sve radi i bez njega, pa ovaj korak može da se preskoči.
+
+1. Napravi besplatan nalog na `the-odds-api.com` (500 poziva mesečno).
+2. Kopiraj `config/api.primer.php` u `config/api.php` i upiši ključ u
+   `ODDS_API_KLJUC`. Fajl `config/api.php` je u `.gitignore` — ključ ne ide u git.
+3. U aplikaciji: **Uvoz sa API-ja → Mapiranje liga**, pa poveži ključ lige sa
+   servisa (npr. `soccer_epl`) sa ligom iz baze.
+
+Bez ključa stranica za uvoz javlja da nije podešena i upućuje na ručni unos.
+
+### Samo na Linuxu: dozvole za foldere
+
+Na Windows XAMPP-u ovo nije potrebno. Na Linuxu Apache radi kao korisnik `daemon`,
+pa folderi u koje aplikacija piše moraju biti njemu dostupni:
+
+```
+sudo chgrp daemon logovi uploads/dokumenta kes
+chmod 775 logovi uploads/dokumenta kes
+```
+
+Bez toga uvoz i dalje radi, ali ne može da sačuva keš, pa svako preuzimanje troši
+poziv iz mesečne kvote (greška se vidi u `logovi/greske.log`).
 
 ## 3. Claude Code
 

@@ -97,6 +97,9 @@ function stavka_menija(string $adresa, string $naziv): void
                     <?php stavka_menija('/operater/dogadjaji.php', 'Događaji i kvote'); ?>
                     <?php stavka_menija('/operater/rezultati.php', 'Rezultati'); ?>
                     <?php stavka_menija('/operater/dokumenta.php', 'Dokumenta'); ?>
+                    <?php // Pomoćni alat. CRUD nad api_liga stoji jedan klik dalje, sa same
+                          // stranice za uvoz, da se glavni meni ne razvuče preko dva reda. ?>
+                    <?php stavka_menija('/operater/uvoz.php', 'Uvoz sa API-ja'); ?>
                 <?php elseif (trenutna_uloga() === 'admin'): ?>
                     <?php stavka_menija('/admin/korisnici.php', 'Korisnici'); ?>
                     <?php stavka_menija('/admin/uloge.php', 'Uloge'); ?>

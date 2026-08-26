@@ -77,12 +77,16 @@ Provera prava ide **na vrhu svake stranice**, pre bilo kakvog ispisa, kroz
 kladionica/
 ├── config/
 │   ├── baza.php              PDO konekcija (jedino mesto sa kredencijalima)
-│   └── konfiguracija.php     konstante: putanje, limiti uploada, min/max ulog
+│   ├── konfiguracija.php     konstante: putanje, limiti uploada, min/max ulog
+│   ├── api.php               ključ za The Odds API — NIJE u gitu
+│   └── api.primer.php        šablon za api.php, sa praznim ključem
 ├── includes/
 │   ├── autentifikacija.php   prijava, odjava, provera uloge, "zapamti me"
 │   ├── validacija.php        funkcije za proveru unosa na serveru
 │   ├── funkcije.php          pomoćne funkcije (formatiranje, redirekcija, escape)
 │   ├── log.php               upis i čitanje tekstualnih log fajlova
+│   ├── odds_api.php          poziv spoljnog servisa sa kvotama + keširanje
+│   ├── uvoz.php              pretvaranje odgovora servisa u našu šemu, upis
 │   ├── zaglavlje.php         HTML head, navigacija (menja se prema ulozi)
 │   └── podnozje.php          footer, zatvaranje tagova, JS skripte
 ├── ajax/                     endpointi koji vraćaju JSON
@@ -92,11 +96,17 @@ kladionica/
 ├── css/style.css             sopstveni stilovi (Bootstrap ide preko CDN-a)
 ├── js/                       vanilla JS: validacija, AJAX, tiket
 ├── uploads/dokumenta/        otpremljeni verifikacioni dokumenti
+├── kes/                      keširani odgovori spoljnog servisa (nisu u gitu)
 ├── logovi/                   pristup.log, greske.log
-├── baza/                     schema.sql, test_podaci.sql
+├── baza/                     schema.sql, test_podaci.sql, migracija_api.sql
 ├── dokumentacija/            materijal za Word dokumentaciju
 └── index.php                 početna strana sa ponudom
 ```
+
+**Uvoz sa spoljnog servisa je pomoćni alat, ne oslonac.** Ručni unos ponude mora
+raditi bez interneta, bez ključa i sa praznom tabelom `api_liga`. Nijedna stranica
+osim `operater/uvoz.php` i `operater/api_lige.php` ne sme uključivati
+`includes/odds_api.php`.
 
 ---
 

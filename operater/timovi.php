@@ -22,24 +22,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $liga_id = ctype_digit((string) ($_POST['liga_id'] ?? '')) ? (int) $_POST['liga_id'] : null;
         $naziv = trim($_POST['naziv'] ?? '');
 
+        // Naziv istog tima kod The Odds API-ja. Polje je opciono i tiče se
+        // isključivo pomoćnog uvoza (operater/uvoz.php) - prazna vrednost se
+        // upisuje kao NULL, da UNIQUE (liga_id, api_naziv) ne bi smetao svim
+        // timovima koji se nikad ne uvoze.
+        $api_naziv = trim($_POST['api_naziv'] ?? '');
+        $api_naziv = $api_naziv !== '' ? $api_naziv : null;
+
         if ($liga_id === null) {
             postavi_poruku('danger', 'Izaberite ligu.');
         } elseif (mb_strlen($naziv) < 2 || mb_strlen($naziv) > 80) {
             postavi_poruku('danger', 'Naziv tima mora imati 2-80 znakova.');
+        } elseif ($api_naziv !== null && mb_strlen($api_naziv) > 80) {
+            postavi_poruku('danger', 'Naziv kod servisa ne sme biti duži od 80 znakova.');
         } else {
             try {
                 if ($id === null) {
-                    $upit = $pdo->prepare('INSERT INTO tim (liga_id, naziv) VALUES (?, ?)');
-                    $upit->execute([$liga_id, $naziv]);
+                    $upit = $pdo->prepare('INSERT INTO tim (liga_id, naziv, api_naziv) VALUES (?, ?, ?)');
+                    $upit->execute([$liga_id, $naziv, $api_naziv]);
                     postavi_poruku('success', 'Tim je dodat.');
                 } else {
-                    $upit = $pdo->prepare('UPDATE tim SET liga_id = ?, naziv = ? WHERE id = ?');
-                    $upit->execute([$liga_id, $naziv, $id]);
+                    $upit = $pdo->prepare('UPDATE tim SET liga_id = ?, naziv = ?, api_naziv = ? WHERE id = ?');
+                    $upit->execute([$liga_id, $naziv, $api_naziv, $id]);
                     postavi_poruku('success', 'Tim je izmenjen.');
                 }
             } catch (PDOException $e) {
-                upisi_gresku('Greška pri čuvanju tima: ' . $e->getMessage());
-                postavi_poruku('danger', 'Trenutno nije moguće sačuvati tim.');
+                if ((int) $e->getCode() === 23000) {
+                    postavi_poruku('danger', 'Taj naziv kod servisa je već upisan drugom timu iste lige.');
+                } else {
+                    upisi_gresku('Greška pri čuvanju tima: ' . $e->getMessage());
+                    postavi_poruku('danger', 'Trenutno nije moguće sačuvati tim.');
+                }
             }
         }
     } elseif ($akcija === 'obrisi' && ctype_digit((string) ($_POST['id'] ?? ''))) {
@@ -133,10 +146,24 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         </select>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label for="naziv" class="form-label">Naziv <span class="text-muted">(tim ili igrač)</span></label>
                         <input type="text" class="form-control" id="naziv" name="naziv" required minlength="2" maxlength="80"
                                value="<?= bezbedno($tim_za_izmenu['naziv'] ?? '') ?>">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="api_naziv" class="form-label">
+                            Naziv kod servisa <span class="text-muted">(opciono)</span>
+                        </label>
+                        <input type="text" class="form-control" id="api_naziv" name="api_naziv" maxlength="80"
+                               placeholder="npr. Red Star Belgrade"
+                               value="<?= bezbedno($tim_za_izmenu['api_naziv'] ?? '') ?>">
+                        <div class="form-text">
+                            Popunjava se samo za timove koji učestvuju u
+                            <a href="<?= KORENSKI_URL ?>/operater/uvoz.php">uvozu sa API-ja</a>; obično ga
+                            uvoz sam upiše. Prazno polje briše vezu.
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100"><?= $tim_za_izmenu ? 'Sačuvaj izmene' : 'Dodaj tim' ?></button>
@@ -158,6 +185,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                     <tr>
                         <th>Liga</th>
                         <th>Naziv</th>
+                        <th>Kod servisa</th>
                         <th class="text-end">Akcije</th>
                     </tr>
                 </thead>
@@ -166,6 +194,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                         <tr>
                             <td><?= bezbedno($tim['sport_naziv']) ?> — <?= bezbedno($tim['liga_naziv']) ?></td>
                             <td><?= bezbedno($tim['naziv']) ?></td>
+                            <td class="small text-muted"><?= bezbedno($tim['api_naziv'] ?? '—') ?></td>
                             <td class="text-end">
                                 <a href="<?= KORENSKI_URL ?>/operater/timovi.php?izmeni=<?= (int) $tim['id'] ?>" class="btn btn-sm btn-outline-primary">Izmeni</a>
                                 <form method="post" class="d-inline" onsubmit="return confirm('Obrisati ovaj tim?');">
@@ -179,7 +208,7 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                     <?php endforeach; ?>
                     <?php if (empty($timovi)): ?>
                         <tr>
-                            <td colspan="3">
+                            <td colspan="4">
                                 <div class="prazno">
                                     <i class="bi bi-people" aria-hidden="true"></i>
                                     <div class="naslov-praznog">Nema unetih timova</div>

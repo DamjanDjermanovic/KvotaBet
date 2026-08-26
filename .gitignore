@@ -2,3 +2,10 @@ uploads/dokumenta/*
 logovi/*.log
 test.php
 !uploads/dokumenta/.gitkeep
+
+# Lični ključ za The Odds API. U git ide samo config/api.primer.php sa
+# praznim ključem.
+config/api.php
+
+# Keširani odgovori API-ja - podaci sa spoljnog servisa, ne izvorni kod.
+kes/*.json

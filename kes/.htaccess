@@ -1,0 +1,10 @@
+# Keširani odgovori The Odds API-ja. Čita ih isključivo includes/odds_api.php
+# preko fajl sistema, pa direktan pristup kroz pregledač nema svrhu.
+# Isti pristup kao za uploads/dokumenta/.
+
+Require all denied
+
+# Ako bi neko ikad ovde ostavio .php fajl, da se ne izvrši
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
