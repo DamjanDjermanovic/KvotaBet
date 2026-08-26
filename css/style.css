@@ -608,6 +608,64 @@ h3 { font-size: 1.3rem; }
 .status-zavrsen   { background: var(--papir);            color: var(--mornar-700); border-color: var(--ivica-jaka); }
 .status-otkazan   { background: var(--papir);            color: var(--prigusen);   border-color: var(--ivica-jaka); border-style: dashed; }
 
+/* Stanja redova u pregledu uvoza sa API-ja (operater/uvoz.php). Zelena i
+   crvena i ovde otpadaju — nijedan red nije ishod, nego uputstvo operateru
+   šta ga čeka. Zato ih ima tačno tri vrste:
+     plava    — ući će u bazu ako ostane čekirano
+     žuta     — traži odluku pre upisa
+     neutral  — ne ulazi (isprekidana ivica kad nešto nedostaje, puna kad je
+                red uredan ali ga već imamo) */
+.status-uvoz-spreman        { background: rgba(14, 107, 168, .10); color: var(--plava-500);  border-color: rgba(14, 107, 168, .28); }
+.status-uvoz-moguc_duplikat { background: var(--ceka-bg);          color: var(--ceka);       border-color: #f0dcb4; }
+.status-uvoz-nepoznat_tim   { background: var(--ceka-bg);          color: var(--ceka);       border-color: #f0dcb4; }
+.status-uvoz-duplikat       { background: var(--papir);            color: var(--mornar-700); border-color: var(--ivica-jaka); }
+.status-uvoz-bez_kvota      { background: var(--papir);            color: var(--prigusen);   border-color: var(--ivica-jaka); border-style: dashed; }
+.status-uvoz-proslo         { background: var(--papir);            color: var(--prigusen);   border-color: var(--ivica-jaka); border-style: dashed; }
+.status-uvoz-neispravan     { background: var(--papir);            color: var(--prigusen);   border-color: var(--ivica-jaka); border-style: dashed; }
+
+/* Traka sa podacima o preuzimanju: kad je keš napravljen, koliko je poziva
+   ostalo i koliko je redova spremno. Namerno NIJE .stat-karta — te kartice
+   nose brojke statistike, a ovo je stanje alata, pa ne sme da im preuzme
+   težinu na stranici. */
+.uvoz-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    background: var(--karta);
+    border: 1px solid var(--ivica);
+    border-radius: var(--radijus);
+    overflow: hidden;
+}
+
+.uvoz-info .stavka {
+    flex: 1 1 12rem;
+    padding: .7rem 1rem;
+    border-left: 1px solid var(--ivica);
+}
+
+.uvoz-info .stavka:first-child { border-left: 0; }
+
+.uvoz-info .oznaka {
+    display: block;
+    font-size: .74rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--prigusen);
+}
+
+.uvoz-info .vrednost {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--mornar-800);
+    font-variant-numeric: tabular-nums;
+}
+
+.uvoz-info .dodatak { font-size: .85rem; color: var(--prigusen); }
+
+/* Istekao keš se vidi i bez čitanja teksta */
+.uvoz-info .stavka.istekao .vrednost { color: var(--ceka); }
+
 /* Iznos u istoriji transakcija — smer se vidi bojom i znakom */
 .iznos-plus  { color: var(--dobitak); font-weight: 600; font-variant-numeric: tabular-nums; }
 .iznos-minus { color: var(--gubitak); font-weight: 600; font-variant-numeric: tabular-nums; }

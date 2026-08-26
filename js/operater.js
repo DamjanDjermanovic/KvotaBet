@@ -83,4 +83,45 @@
             });
         }
     }
+
+    // Na pregledu uvoza (operater/uvoz.php): kućica u zaglavlju tabele
+    // označava ili poništava sve redove odjednom. Redovi koji se ne mogu
+    // uneti (duplikat, nepoznat tim, prošlo vreme) uopšte nemaju kućicu, pa
+    // ih ovo ni ne dodiruje. Ništa se ne šalje serveru - upis i dalje traži
+    // klik na "Sačuvaj u bazu".
+    var formaUvoz = document.getElementById('forma-uvoz');
+    var kucicaSve = document.getElementById('uvoz-sve');
+
+    if (formaUvoz && kucicaSve) {
+        var kucice = formaUvoz.querySelectorAll('input[name="utakmica[]"]');
+
+        // Zaglavlje odmah pokazuje zatečeno stanje: server je već čekirao ono
+        // što je spremno, pa kućica ne sme da krene od praznog
+        function osveziZaglavlje() {
+            var oznaceno = 0;
+
+            Array.prototype.forEach.call(kucice, function (kucica) {
+                if (kucica.checked) {
+                    oznaceno++;
+                }
+            });
+
+            kucicaSve.checked = oznaceno === kucice.length && kucice.length > 0;
+            // Delimičan izbor se prikazuje trećim stanjem, a ne praznom kućicom
+            kucicaSve.indeterminate = oznaceno > 0 && oznaceno < kucice.length;
+        }
+
+        kucicaSve.addEventListener('change', function () {
+            Array.prototype.forEach.call(kucice, function (kucica) {
+                kucica.checked = kucicaSve.checked;
+            });
+            kucicaSve.indeterminate = false;
+        });
+
+        Array.prototype.forEach.call(kucice, function (kucica) {
+            kucica.addEventListener('change', osveziZaglavlje);
+        });
+
+        osveziZaglavlje();
+    }
 })();

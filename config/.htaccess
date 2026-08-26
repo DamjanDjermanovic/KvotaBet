@@ -1,0 +1,10 @@
+# U ovom folderu su kredencijali baze (baza.php) i ključ za spoljni servis
+# (api.php). Ti fajlovi se uključuju iz PHP-a preko require_once, što je
+# pristup fajl sistemu i .htaccess ga ne dodiruje — zabrana ispod se odnosi
+# samo na pokušaj otvaranja kroz pregledač.
+#
+# Dok PHP radi, otvaranje config/baza.php u pregledaču ionako ne bi ispisalo
+# ništa. Ali ako bi PHP ikad zakazao ili bio isključen, Apache bi isti fajl
+# poslužio kao običan tekst — sa lozinkom i ključem u njemu. Ova jedna linija
+# zatvara i taj slučaj.
+Require all denied

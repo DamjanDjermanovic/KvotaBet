@@ -86,12 +86,19 @@ CREATE TABLE liga (
 -- 5. TIM
 -- ---------------------------------------------------------------------
 CREATE TABLE tim (
-    id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    liga_id SMALLINT UNSIGNED NOT NULL,
-    naziv   VARCHAR(80) NOT NULL,
-    grb     VARCHAR(255) NULL,          -- putanja do otpremljene slike
+    id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    liga_id   SMALLINT UNSIGNED NOT NULL,
+    naziv     VARCHAR(80) NOT NULL,
+    grb       VARCHAR(255) NULL,          -- putanja do otpremljene slike
+    -- Naziv istog tima kod The Odds API-ja (na engleskom, npr. "Red Star
+    -- Belgrade"). Popunjava se samo za timove koji učestvuju u pomoćnom uvozu
+    -- ponude; ručni unos ga ne traži i ostaje NULL. Zahvaljujući tome što
+    -- MySQL dozvoljava više NULL vrednosti u UNIQUE ključu, ograničenje ispod
+    -- ne smeta timovima koji se nikad ne uvoze.
+    api_naziv VARCHAR(80) NULL,
     PRIMARY KEY (id),
     KEY ix_tim_liga (liga_id),
+    UNIQUE KEY uq_tim_api_naziv (liga_id, api_naziv),
     CONSTRAINT fk_tim_liga FOREIGN KEY (liga_id)
         REFERENCES liga (id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
@@ -278,6 +285,32 @@ CREATE TABLE pristup_log (
     KEY ix_log_datum (datum_vreme),
     CONSTRAINT fk_log_korisnik FOREIGN KEY (korisnik_id)
         REFERENCES korisnik (id) ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+
+-- ---------------------------------------------------------------------
+-- 14. API_LIGA — mapiranje ključeva liga sa The Odds API-ja (npr.
+--     'soccer_epl') na lige u ovoj bazi.
+--
+--     Postoji isključivo zbog pomoćnog uvoza ponude (operater/uvoz.php):
+--     bez nje uvoz ne bi znao u koju ligu da upiše preuzete utakmice.
+--     Ručni unos ponude ne zavisi od ove tabele, pa prazna tabela ne smeta
+--     nijednoj drugoj funkciji aplikacije.
+-- ---------------------------------------------------------------------
+CREATE TABLE api_liga (
+    id            SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    api_kljuc     VARCHAR(60)  NOT NULL,   -- ključ lige kod API-ja, npr. soccer_epl
+    liga_id       SMALLINT UNSIGNED NOT NULL,
+    naziv_kod_api VARCHAR(120) NULL,       -- čitljiv naziv koji servis prijavljuje
+    aktivna       TINYINT(1)   NOT NULL DEFAULT 1,
+    datum_unosa   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    -- Jedan ključ API-ja vodi u tačno jednu ligu; obrnuto ne mora da važi,
+    -- jer se ista liga može javiti pod više ključeva (npr. kvalifikacije)
+    UNIQUE KEY uq_api_liga_kljuc (api_kljuc),
+    KEY ix_api_liga_liga (liga_id),
+    CONSTRAINT fk_api_liga_liga FOREIGN KEY (liga_id)
+        REFERENCES liga (id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 
