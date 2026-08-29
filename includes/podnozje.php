@@ -26,6 +26,10 @@
       // pre ostalih skripti, da im funkcija bude na raspolaganju. ?>
 <script src="<?= KORENSKI_URL ?>/js/ucitavanje.js"></script>
 
+<?php // Sprečava dva istovremeno otvorena grupna menija u navigaciji - ide na
+      // svaku stranu, jer se navigacija ispisuje svuda ?>
+<script src="<?= KORENSKI_URL ?>/js/navigacija.js"></script>
+
 <?php foreach ($dodatne_skripte ?? [] as $skripta): ?>
 <script src="<?= KORENSKI_URL ?>/js/<?= bezbedno($skripta) ?>"></script>
 <?php endforeach; ?>

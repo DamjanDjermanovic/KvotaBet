@@ -425,37 +425,122 @@ h3 { font-size: 1.3rem; }
    GRUPE U GLAVNOJ NAVIGACIJI (Utakmice, Šifarnici, Korisnici...)
 
    Isti .dropdown-menu kao svuda drugde (akcije nad događajem, itd.), ovde
-   samo prikačen na stavku glavnog menija. Tri sloja otvaranja:
-     1. bez JS-a:    :hover / :focus-within niže u ovom bloku
-     2. sa JS-om, ≥992px: Bootstrap-ov dropdown iz bootstrap.bundle.min.js -
-        klik, strelice, Escape - ništa od toga nije ručno pisano ovde
-     3. sa JS-om, <992px: isti Bootstrap mehanizam, ali meni je stilizovan
-        kao ugnežđena lista (position: static), ne kao popup - vidi media
-        upit ispod.
+   samo prikačen na stavku glavnog menija. Dva sloja otvaranja, i tačno JEDAN
+   je izvor istine u datom trenutku - ne oba istovremeno (razlog je niže):
+     1. bez JS-a (ili dok se Bootstrap ne učita): :focus-within niže u ovom
+        bloku - jedini mehanizam, tastatura, Tab.
+     2. sa JS-om (≥992px popup, <992px ugnežđena lista): isključivo
+        Bootstrap-ov dropdown iz bootstrap.bundle.min.js - klik, Enter/Space,
+        strelice, Escape - ništa od toga nije ručno pisano ovde. Čim
+        js/navigacija.js potvrdi da je Bootstrap dostupan, doda klasu
+        .js-aktivan na svaku grupu (<li class="dropdown">), i ISKLJUČIVO
+        TADA prestaje da važi pravilo iz sloja 1 - vidi :not(.js-aktivan)
+        niže i objašnjenje zašto je to nužno.
+
+   ZAŠTO JEDAN OD DVA SLOJA MORA DA SE ISKLJUČI (utvrđeno merenjem, ne
+   pretpostavkom - dva odvojena, privremena dijagnostička alata, oba
+   pokazala isti obrazac):
+
+   Bootstrap pri OTVARANJU sam pozove toggle.focus() (deo je njegove
+   pristupačnosti - fokus mora biti na kontroli koja je "aria-expanded").
+   Taj fokus ne ode sam od sebe kad JS kasnije zatvori meni, a zatvaranje se
+   dešava na DVA načina koja moraju da rade različito po pitanju fokusa:
+     - drugi klik na isti toggle: fokus ostaje na toggle-u (klik ga ne
+       pomera), i to je u redu - ali kad bi :focus-within i dalje važio,
+       meni bi ostao vizuelno otvoren iako ga je Bootstrap zatvorio (tačno
+       prijavljen bag - .show ispravno nestaje, aria-expanded ispravno
+       postaje "false", ali CSS opacity/pointer-events ostaju na "otvoreno"
+       jer :focus-within ništa ne zna o Bootstrap-ovoj odluci).
+     - Escape: Bootstrap NAMERNO vraća fokus na toggle (ARIA konvencija za
+       meni-dugme - korisnik mora znati gde je posle zatvaranja). Ovde se
+       fokus NE SME skidati (to bi pokvarilo baš tu pristupačnost), pa
+       "skini fokus posle zatvaranja" (rešenje isprobano prvo, za klik) NIJE
+       opšte rešenje - ne pokriva Escape, i ne sme ni da pokuša.
+
+   Zajednički uzrok oba slučaja: :focus-within ne pamti KAKO je fokus stigao
+   na toggle (sveža tastaturna navigacija koja traži otvaranje, ili ostatak
+   fokusa posle zatvaranja) - CSS nema memoriju uzroka, samo trenutno stanje.
+   Rešenje zato ne diraj fokus nikako, nego isključi CEO :focus-within sloj
+   čim Bootstrap preuzme odgovornost. Bootstrap-ova .show tada postaje jedini
+   izvor istine za VIZUELNO stanje - ona je već tačna za svaki slučaj
+   zatvaranja (klik, Escape, klik van menija, "samo jedan otvoren" niže u
+   ovoj datoteci) jer je Bootstrap sam upravlja preko svog Dropdown API-ja.
+
+   Posledica: kad je JS aktivan, GOLO doskakanje fokusa na toggle Tab-om više
+   SAMO PO SEBI ne otvara meni (taj posao sada radi isključivo :focus-within
+   sloj 1, isključen kad je .js-aktivan prisutan) - ali Enter/Space ili
+   strelica dole, odmah pošto Tab dovede fokus na toggle, otvaraju ga preko
+   Bootstrap-a, kao i uvek. Ovo NIJE gubitak tastaturnog pristupa (meni je i
+   dalje dostignjiv i otvoriv tastaturom, samo jednim tasterom više) - i
+   tačno odgovara već postojećoj nameri iz sloja 1 ("bez JS-a: :focus-within"
+   - sloj je od početka bio zamišljen kao rezerva ZA SLUČAJ DA JS-a nema, ne
+   kao dodatni način otvaranja POREĐ Bootstrap-a dok JS radi).
+
+   NEMA :hover sloja. Postojao je u prvoj verziji i namerno je uklonjen, ne
+   samo popravljen: na dodirnim ekranima :hover ostaje "zalepljen" posle prvog
+   dodira (nema pravog pokazivača koji bi "izašao" i okinuo suprotno stanje),
+   pa bi meni otvoren dodirom ostajao otvoren i posle dodira negde drugde -
+   ponašanje koje korisnik ne očekuje i ne ume da zatvori. Otvaranje sada ide
+   isključivo namernom radnjom: klik (Bootstrap) ili tastatura (:focus-within
+   ili Bootstrap, zavisno od sloja iznad), nikad slučajnim prelaskom
+   pokazivača.
    ===================================================================== */
 
 /* Karica menija iznad ostatka stranice - iznad .grafikon-okvir (koji nema
    z-index) i iznad .tiket-panel (sticky, bez sopstvenog z-indexa) */
 .navbar .dropdown-menu { z-index: 1030; }
 
-/* Bez JavaScripta: hover otkriva meni mišu, focus-within otkriva Tab-om.
-   Radi zato što Bootstrap-ova klasa .dropdown već daje position:relative
-   roditelju (li), pa apsolutno pozicioniran .dropdown-menu ispravno padne
-   ispod i bez Poppera - dovoljno je samo primorati display:block. Specifičnost
-   ova tri selektora (0,3,0) je veća od Bootstrap-ovog .dropdown-menu (0,1,0),
-   pa !important nije potreban. */
+/* Bez JavaScripta (ili pre nego što se .js-aktivan doda): focus-within
+   otkriva meni Tab-om. Radi zato što Bootstrap-ova klasa .dropdown već daje
+   position:relative roditelju (li), pa apsolutno pozicioniran .dropdown-menu
+   ispravno padne ispod i bez Poppera. Specifičnost
+   .navbar .dropdown:not(.js-aktivan):focus-within (0,4,0) je veća od
+   Bootstrap-ovog .dropdown-menu (0,1,0), pa !important nije potreban.
+   Otkrivanje-zatvaranje ide preko opacity/transform/pointer-events, a NE
+   preko display: display se ne može animirati, a otvaranje mora da radi
+   identično bez obzira ko ga pokrenuo (tastatura ili Bootstrap-ov klik) -
+   zato prelaz stoji na samom .dropdown-menu, kao osobina koja važi uvek, a ne
+   vezana za jedan od dva okidača.
+   Otvaranje ~140ms, zatvaranje ~100ms: CSS pravilo koje važi U TRENUTKU
+   promene diktira trajanje, pa je dovoljno da zatvoreno i otvoreno stanje
+   nose različit "transition" - nije potrebna posebna klasa za brzinu.
+   pointer-events prati opacity ali se NE animira (izostavljen iz transition
+   liste): otvoreno stanje mora odmah biti klikabilno, ne tek kad se
+   provuče kroz ceo prelaz - inače bi prvi klik u otvaranju bio "progutan". */
 @media (min-width: 992px) {
-    .navbar .dropdown:hover > .dropdown-menu,
-    .navbar .dropdown:focus-within > .dropdown-menu {
+    .navbar .dropdown-menu {
         display: block;
+        opacity: 0;
+        transform: translateY(-4px);
+        pointer-events: none;
+        transition: opacity .1s ease-out, transform .1s ease-out;
+    }
+
+    .navbar .dropdown:not(.js-aktivan):focus-within > .dropdown-menu,
+    .navbar .dropdown-menu.show {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+        transition: opacity .14s ease-out, transform .14s ease-out;
     }
 }
 
-/* Otvoren toggle izgleda kao da je pod mišem, i sa JS-om i bez njega -
-   dosledno sa .navbar .nav-link:hover */
+/* U sažetom meniju (<992px) je meni deo toka teksta (position: static), ne
+   plutajući popup - translateY tu nema smisla, a animacija opacity-a bi
+   morala da nosi i visinu (max-height) da zatvoren meni ne ostavi prazan
+   razmak u toku teksta, što je više mehanike nego što ovde vredi. Zadržan je
+   trenutni prelaz bez animacije (Bootstrap-ovo display: none / .show), koji
+   je već pravilno primenjen kroz media upit ispod. */
+
+/* Otvoren toggle izgleda kao da je pod mišem, i sa JS-om i bez njega. Hover
+   samog toggle-a (bez otvaranja menija) i dalje radi - stiže kroz opšte
+   pravilo .navbar .nav-link:hover iznad, jer .dropdown-toggle nosi i klasu
+   .nav-link; ovde treba samo dodati da isto stanje dobije i kad je meni
+   otvoren tastaturom ili klikom, ne mišem. Isti :not(.js-aktivan) razlog kao
+   iznad - inače bi i sam toggle ostajao "istaknut" posle zatvaranja dok mu se
+   fokus ne skloni. */
 .navbar .dropdown-toggle.show,
-.navbar .dropdown:hover > .dropdown-toggle,
-.navbar .dropdown:focus-within > .dropdown-toggle {
+.navbar .dropdown:not(.js-aktivan):focus-within > .dropdown-toggle {
     color: #fff !important;
     background: rgba(255, 255, 255, .08);
 }
@@ -1457,7 +1542,11 @@ code { overflow-wrap: anywhere; }
     .table { font-size: .88rem; }
 }
 
-/* Poštovanje sistemskog podešavanja za smanjeno kretanje */
+/* Poštovanje sistemskog podešavanja za smanjeno kretanje. Univerzalni
+   selektor sa !important pobeđuje bilo koju specifičnost, pa ovo gasi i
+   prelaz na .navbar .dropdown-menu (GRUPE U GLAVNOJ NAVIGACIJI) - provereno
+   snimkom ekrana uz prefers-reduced-motion: reduce, meni se pojavljuje/nestaje
+   bez ijednog vidljivog koraka prelaza. */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: .01ms !important;
