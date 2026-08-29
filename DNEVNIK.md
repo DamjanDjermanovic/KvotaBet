@@ -1369,3 +1369,431 @@ stavki, bez grupa). PHP sintaksa čista na svih 54 fajla.
 Privremeni alati (merač prelivanja, klikač sa tastaturom, test bez JS-a) nisu
 deo aplikacije i obrisani su, zajedno sa probnim nalozima. U bazi su ostala
 zatečena 3 naloga, 12 događaja, 24 tima.
+
+---
+
+## Animacija padajućih menija i "samo jedan otvoren" (2026-08-26)
+
+### 1. Animacija - na samom `.dropdown-menu`, ne na okidaču
+
+Otvaranje ~140ms, zatvaranje ~100ms, `opacity` + `translateY(-4px → 0)`,
+`ease-out`. Zahtev je bio da prelaz radi identično bez obzira ko ga pokrenuo -
+:hover, :focus-within ili Bootstrap-ova klasa `.show` - pa prelaz stoji na
+`.dropdown-menu` kao takvom:
+
+```css
+.navbar .dropdown-menu {
+    display: block;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity .1s ease-out, transform .1s ease-out;
+}
+
+.navbar .dropdown:hover > .dropdown-menu,
+.navbar .dropdown:focus-within > .dropdown-menu,
+.navbar .dropdown-menu.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity .14s ease-out, transform .14s ease-out;
+}
+```
+
+Trik za dve različite brzine bez posebne klase: CSS pravilo koje je AKTIVNO u
+trenutku promene diktira trajanje prelaza. Zatvoreno stanje nosi `.1s`
+(koristi se pri zatvaranju, jer se tada baš ono ponovo primenjuje), otvoreno
+`.14s` (koristi se pri otvaranju) - standardan obrazac za "brže napolje nego
+unutra", bez ijedne dodatne klase ili linije JS-a.
+
+**Zašto ovo zahteva `display: block` stalno, a ne `display: none` kad je
+zatvoreno:** `display` se ne može animirati - prelaz sa `none` na `block` je
+trenutan skok, bez koraka. Zato je `.dropdown-menu` sad UVEK u iscrtavanju
+(≥992px), sakriven isključivo preko `opacity: 0` i onemogućen preko
+`pointer-events: none` (bez ovog drugog, nevidljiv meni bi i dalje gutao
+klikove namenjene sadržaju ispod njega - tačno upozorenje iz zahteva).
+`pointer-events` namerno NIJE u `transition` listi: menja se trenutno, ne
+tokom prelaza, jer otvoren meni mora biti klikabilan čim počne da se pojavljuje,
+ne tek kad se prelaz do kraja odigra.
+
+**Mobilni (<992px) meni namerno ostaje bez animacije.** Tamo je meni deo toka
+teksta (`position: static`), ne plutajući popup - `translateY` tu nema smisla
+(zahtev to i zabranjuje), a da bi se animirao makar `opacity`, zatvoreno stanje
+bi moralo trajno da rezerviše svoju visinu u toku teksta (isti razlog zbog kog
+je ≥992px sad stalno u iscrtavanju), što bi ostavilo prazan razmak gde stoji
+zatvorena lista - vidljiv nedostatak. Ispravno rešenje bi bilo i sažimanje
+visine (`max-height` prelaz), što zahtev izričito ne traži ("dovoljna je
+promena opacity, ili nikakva") - izabrano je "nikakva", najjednostavnije i bez
+rizika. Mobilni meni je i dalje Bootstrap-ov običan `display: none` / `.show`.
+
+**Smanjeno kretanje.** Postojeće univerzalno pravilo
+(`*, *::before, *::after { transition-duration: .01ms !important; }`) hvata i
+ova dva nova prelaza bez izmene, jer `!important` na univerzalnom selektoru
+pobeđuje bilo koju specifičnost. Provereno snimkom ekrana uz
+`prefers-reduced-motion: reduce` - meni se pojavljuje bez ijednog vidljivog
+koraka.
+
+### 2. Samo jedan otvoren - `js/navigacija.js`, minimalan, oslanja se na Bootstrap API
+
+Bootstrap već zatvara prethodni meni pri KLIKU na sledeći - to je ugrađeno i
+nije ponovo pisano. Praznina je bila u CSS-only slojevima: `:hover` i
+`:focus-within` ništa ne znaju o tome da je neki drugi meni već otvoren preko
+Bootstrap-a (`.show`), pa bi prelazak miša (ili Tab) preko druge grupe otvorio
+i nju - dva menija odjednom.
+
+`js/navigacija.js` (učitava se na svakoj strani, uz `js/ucitavanje.js`) sluša
+`mouseenter` i `focusin` na svakoj grupi. Kad pokazivač ili fokus UĐE u jednu,
+funkcija prođe kroz SVE OSTALE i, za onu koja ima `.show`, pozove
+`bootstrap.Dropdown.getOrCreateInstance(toggle).hide()` - zvaničan API, ne
+ručno skidanje klase, pa Bootstrap ostaje u toku (aria-expanded, sopstveni
+`hidden.bs.dropdown` događaj, sve se ažurira ispravno).
+
+Ako `bootstrap` global ne postoji (nema JS-a), skripta se sama gasi na prvoj
+liniji - ništa se ne pokreće, CSS sloj ostaje kakav jeste.
+
+### Otkriveno pri testiranju - preostalo ograničenje, dokumentovano kako je i traženo
+
+**Dva CSS-only sloja mogu ostati istovremeno otvorena BEZ JavaScripta**, i to
+u tačno jednom scenariju: miš pokazuje na jednu grupu (:hover) dok je tastaturni
+fokus istovremeno u drugoj (:focus-within) - dva nezavisna ulazna uređaja, dve
+nezavisne trenutne pozicije, oba legitimna. `navigacija.js` ovo ne rešava po
+dizajnu: gasi samo ono što je Bootstrap-ova `.show` evidencija, a ne bi imalo
+smisla da hover prisilno oduzima tastaturni fokus samo zato što je meni ispod
+pokazivača - to bi bio gori bag od dva otvorena menija.
+
+Zahtev je ovo unapred predvideo i dozvolio ("prihvatljivo da :hover ponašanje
+ostane kakvo jeste") uz traženu proveru da izgleda podnošljivo. Kako izgleda
+(oba menija forsirano otvorena, kao proksi za ovaj scenario - genuine :hover ne
+može da se sintetički pokrene u headless Chrome-u van CDP-a, objašnjeno ispod):
+susedne grupe ("Utakmice" i "Šifarnici") stoje jedna pored druge bez preklapanja
+teksta u glavnom telu, samo se DESNA ivica LEVOG menija delimično sakrije ispod
+VIŠE postavljenog (kasnijeg u DOM-u) desnog menija - u konkretnom slučaju,
+poslednja stavka "Uvoz sa API-ja" gubi deo teksta. Nijedan meni ne postaje
+negativan ili nečitljiv - podnošljivo, ali ne savršeno.
+
+### Testirano
+
+**Sva tri sloja, pojedinačno, čitanjem `getComputedStyle` na `.dropdown-menu`
+(1350px):**
+- zatvoreno (bez ijednog okidača): `opacity=0`, `transform=matrix(1,0,0,1,0,-4)`
+  (= `translateY(-4px)`), `pointer-events=none`, `transition-duration=0.1s`;
+- `:focus-within` (`.focus()` na toggle - pravi fokus, za razliku od hovera
+  legitimno se pokreće programski): rule se odmah prebacuje na
+  `pointer-events=auto`, `transition-duration=0.14s`;
+- Bootstrap `.show` (`.click()` na toggle): isto `pointer-events=auto`,
+  `transition-duration=0.14s`, uz `show-klasa=true`;
+- da se opacity/transform STVARNO ispisuju do kraja (1/translateY(0)), a ne
+  samo da je pravilo tehnički pogodilo, provereno snimkom ekrana posle
+  fokusiranja - meni pun, nepomeren, čitljiv.
+
+**`:hover` specifično nije sintetički testiran** - `element.dispatchEvent(new
+MouseEvent('mouseenter', ...))` menja DOM stanje (događaji koje sluša
+`js/navigacija.js` I DALJE rade ispravno na tu simulaciju), ali ne menja
+STVARNO ":hover" stanje pregledača, koje prati pravi pokazivač na nivou
+rendering engine-a, ne DOM događaje - poznato ograničenje headless testiranja
+bez CDP/WebSocket pristupa (nije dostupan u ovom okruženju: nema `pip`,
+`websocket-client` ni `Xvfb`/`xdotool` za pravi miš). Ovo NIJE rupa u dokazu:
+`:hover` i `:focus-within` su zarezom razdvojeni selektori koji dele ISTO telo
+pravila (`{ opacity: 1; transform: translateY(0); ... }` stoji tačno jednom u
+izvornom kodu) - nema načina da CSS pravilo primeni različite vrednosti zavisno
+od toga koji ga je od tri selektora pogodio. Dokazano za `:focus-within`,
+dokazano i za `:hover`, jer je isto pravilo.
+
+**"Samo jedan otvoren", oba sudarna scenarija, sintetičkim `mouseenter` i
+`focusin` (koji - za razliku od `:hover` - JESU pravi DOM događaji i pokreću
+`js/navigacija.js` tačno kao što bi ih pokrenuo pravi ulaz):**
+- klik na "Utakmice" (`show-klasa=true`) → `mouseenter` na "Šifarnici" →
+  "Utakmice" prelazi na `show-klasa=false`, `pointer-events=none`;
+- klik na "Utakmice" → `focusin` na "Šifarnici" (`.focus()`) → isti ishod;
+- snimkom ekrana posle klik+fokus sekvence: vidljiv isključivo "Šifarnici",
+  "Utakmice" zatvoreno - potvrđeno vizuelno, ne samo kroz DOM stanje.
+
+**Prelivanje na 375 / 991 / 992 / 1350px, obe teme, meni zatvoren / otvoren
+klikom / otvoren fokusom**, na dve NAJRIZIČNIJE grupe (najbliže desnoj ivici
+navigacije - "Šifarnici" kod operatera, "Nadzor" kod admina, jer `.dropdown-menu`
+je od sada UVEK u iscrtavanju na ≥992px, pa i zatvoren teorijski može da
+prelije ako mu geometrija padne van ekrana): **nijedno prelivanje, nijedna
+kombinacija.** Vizuelno potvrđeno i na 992px (najuža desktop širina) da meni
+"Nadzor" staje udobno, sa oko 350px slobodnog prostora do desne ivice.
+
+**Ostalo:** mobilni ugnežđeni prikaz (375px) vizuelno nepromenjen u obe teme
+(namerno - animacija tamo nije ni dirana). Sve tri uloge, obe teme - HTTP 200,
+bez `Fatal error`/`Warning`/`Notice`/`Deprecated`/`SQLSTATE`. PHP sintaksa
+čista na svih 54 fajla.
+
+Privremeni alati (merač animiranih vrednosti, merač prelivanja) nisu deo
+aplikacije i obrisani su, zajedno sa probnim nalozima. U bazi su ostala
+zatečena 3 naloga, 12 događaja, 24 tima.
+
+---
+
+## Uklonjeno :hover otvaranje padajućih menija (2026-08-26)
+
+### Zašto uklonjeno, a ne samo popravljeno
+
+`:hover` je bio jedan od tri sloja otvaranja iz prethodnog kruga. Problem nije
+bio u tome kako radi na računaru - tamo je bio ispravan - nego na dodirnim
+ekranima. Tamo ne postoji pravi pokazivač koji "uđe" i "izađe": prvi dodir na
+telefonu prevodi pregledač u `:hover` stanje (jer nema boljeg signala odakle bi
+inače dolazio), i to stanje **ostaje zalepljeno** dok korisnik ne dodirne nešto
+drugo što samo po sebi menja fokus. Meni otvoren dodirom bi tako ostajao
+otvoren i posle dodira negde drugde na strani - korisnik ne bi imao način da ga
+zatvori osim slučajnim dodirom van njega, što nije očigledno ponašanje. Zato je
+`:hover` izbačen u potpunosti, a ne samo dorađen - nema bezbedne varijante koja
+zadržava prelazak miša kao okidač, a da ne pravi ovaj problem na dodiru.
+
+Otvaranje sada ide isključivo namernom radnjom:
+- **klik** - Bootstrap-ov ugrađeni dropdown (`bootstrap.bundle.min.js`), radi
+  identično na mišu i na dodiru;
+- **tastatura** - `:focus-within`, i dalje bez ijedne linije JavaScripta.
+
+### Izmene
+
+- `css/style.css` - iz selektora liste u oba pravila (otvaranje menija i
+  isticanje toggle-a) izbačen `.navbar .dropdown:hover > ...`. Ostalo
+  (`:focus-within`, `.show`, animacija) je nedirnuto - isto telo pravila,
+  samo kraća lista selektora koji ga pokreću. Hover na SAMOM toggle-u (bez
+  otvaranja menija) i dalje radi, ali stiže kroz već postojeće opšte pravilo
+  `.navbar .nav-link:hover` (toggle nosi i klasu `.nav-link`) - ništa novo tu
+  nije trebalo pisati.
+- `js/navigacija.js` - uklonjen `mouseenter` slušalac. `focusin` ostaje, jer
+  `:focus-within` i dalje može otvoriti drugi meni dok je neki već otvoren
+  klikom, pa "samo jedan otvoren" i dalje mora da radi za tu kombinaciju.
+
+### Otpada ranije dokumentovano ograničenje
+
+Prošli krug je opisao (i prihvatio, po izričitom dopuštenju iz tog zahteva)
+scenario u kom dva menija ostanu otvorena bez JavaScripta: miš na jednoj grupi
+(`:hover`) dok je tastaturni fokus istovremeno u drugoj (`:focus-within`) - dva
+nezavisna ulazna uređaja, dve nezavisne trenutne pozicije. Uklanjanjem `:hover`
+kao okidača taj scenario **više ne postoji**: jedini CSS-only način da se meni
+otvori je `:focus-within`, a fokus u datom trenutku može biti samo na jednom
+mestu na strani. Sudar dva CSS-only sloja je time nestao zajedno sa jednim od
+ta dva sloja - ne popravljen, uklonjen zajedno sa uzrokom.
+
+### Otkriveno pri testiranju - artefakt alata za proveru, ne greška sajta
+
+Test iz prethodnog kruga (`getComputedStyle` posle `.focus()`, čitano preko
+`--dump-dom` uz `--virtual-time-budget`) je za `:focus-within` sad davao
+`opacity=0` čak i posle više uzastopnih čitanja - dok je `pointer-events`
+ispravno prelazio na `auto`. Posumnjalo se na pravi bug (dve vrednosti iz ISTOG
+pravila, jedna se primeni a druga ne), pa je provereno izolovanom, minimalnom
+stranicom van aplikacije:
+
+- ista pravila, `.focus()`, `getComputedStyle` odmah zatim, pod
+  `--virtual-time-budget` → `opacity` zaglavljen na `0`;
+- ista stranica, ali **bez** `transition` na `.dropdown-menu` → `opacity`
+  ispravno `1`;
+- ista stranica **bez** `--virtual-time-budget` (stvarno vreme) → snimak
+  ekrana pokazuje potpuno neproviran meni (piksel `(255,255,255)`, čista bela).
+
+Zaključak: `--virtual-time-budget` u headless Chrome-u zamrzava CSS
+**tranzicije** (koje zavise od internog časovnika animacije) na njihovu
+početnu vrednost, dok trenutne promene poput `pointer-events` (van
+`transition` liste) prolaze normalno. `:focus-within` selektor je sve vreme
+ispravno pogađao pravilo - alat za proveru je lagao o rezultatu, ne CSS. Sav
+dalji vizuelni dokaz u ovom krugu rađen je snimcima ekrana **bez**
+`--virtual-time-budget` (obična navigacija + `.focus()`/`.click()` u
+`onload`), gde se stvarno vreme dâ tranziciji da završi pre snimka.
+
+### Testirano
+
+**Logika (dump-dom, virtual-time - pouzdano za sve osim opacity):**
+- sintetički `mouseenter` na toggle → **bez efekta**: `opacity=0`,
+  `pointer-events=none`, `show-klasa=false` pre i posle, identično - ni CSS ni
+  JS više ne slušaju taj događaj;
+- klik → `pointer-events=auto`, `show-klasa=true` (Bootstrap i dalje radi);
+- `.focus()` → `pointer-events=auto` (`:focus-within` i dalje pogađa pravilo);
+- klik na "Utakmice" pa `.focus()` na "Šifarnici" → "Utakmice" se vraća na
+  `pointer-events=none`, `show-klasa=false` (`focusin` u `navigacija.js` i
+  dalje zatvara sestrinske grupe).
+
+**Vizuelno, snimcima ekrana BEZ `--virtual-time-budget` (stvarno vreme za
+tranziciju), obe teme, na pravim stranicama (`operater/lige.php`,
+`admin/korisnici.php`):**
+- klik otvara meni, potpuno neproziran;
+- `.focus()` (tastatura) otvara meni, potpuno neproziran - isti prelaz kao
+  klik, kako i treba, jer stoji na istom `.dropdown-menu` pravilu;
+- svetla i tamna tema jasno različite (bela/tamna podloga menija), oba
+  potpuno čitljiva;
+- klik na "Utakmice" pa fokus na "Šifarnici" → vidljiv isključivo "Šifarnici",
+  "Utakmice" zatvoreno - "samo jedan otvoren" i dalje važi;
+- mobilni ugnežđeni prikaz (375px, klik na hamburger pa na grupu) vizuelno
+  nepromenjen - mehanizam ispod 992px nije ni dirnut.
+
+**Smanjeno kretanje** - direktno merenje `transition-duration` na izolovanoj
+stranici sa istim CSS-om: bez zastavice `0.1s, 0.1s`, sa
+`--force-prefers-reduced-motion` `1e-05s` (`.01ms`) - postojeće univerzalno
+pravilo na dnu `style.css` i dalje gasi ovu (i svaku drugu) tranziciju.
+
+**Prelivanje**, ponovljeno na 375 / 991 / 992 / 1350px, obe teme, klik i
+fokus, na obe najrizičnije grupe ("Šifarnici" kod operatera, "Nadzor" kod
+admina): **nijedno prelivanje, nijedna kombinacija** - geometrija (horizontalno
+prelivanje) nije zavisila od `--virtual-time-budget` artefakta, jer
+`translateY` menja samo Y osu.
+
+**Ostalo:** sve stranice obe uloge (admin, operater), obe teme - HTTP 200, bez
+`Fatal error`/`Warning`/`Notice`/`Deprecated`/`SQLSTATE`. Brojanje `{`/`}` u
+`style.css` balansirano, nijedan preostali pomen `:hover` uz `.dropdown` u
+`style.css` ni `js/navigacija.js`.
+
+Privremeni alati (test računatih CSS vrednosti, merač prelivanja, izolovane
+probne stranice) nisu deo aplikacije i obrisani su, zajedno sa probnim
+nalozima. U bazi su ostala zatečena 3 naloga, 12 događaja, 24 tima.
+
+---
+
+## Klik na otvoren padajući meni ga nije zatvarao (2026-08-26)
+
+### Utvrđivanje uzroka - pre bilo kakve izmene
+
+Sumnja iz zahteva (Bootstrap skine `.show`, ali fokus ostaje na toggle-u pa
+`:focus-within` i dalje drži meni otvorenim) proverena je privremenim
+dijagnostičkim alatom koji čita **stvarno DOM i CSS stanje** posle svakog
+klika - klasu, `aria-expanded`, `document.activeElement`, da li roditelj
+pogađa `:focus-within`, i računatu `pointer-events`. Rezultat posle drugog
+klika na isti toggle:
+
+| Polje | Vrednost | Značenje |
+|---|---|---|
+| `toggle.classList` | `nav-link dropdown-toggle` (bez `.show`) | Bootstrap ispravno zatvorio |
+| `aria-expanded` | `false` | Bootstrap ispravno zatvorio |
+| `activeElement === toggle` | `true` | **fokus nije otišao nikuda** |
+| `li.matches(':focus-within')` | `true` | **CSS uslov i dalje tačan** |
+| `pointer-events` | `auto` | **meni i dalje vizuelno/interaktivno otvoren** |
+
+Sumnja je potvrđena tačno: Bootstrap radi svoj deo posla besprekorno (klasa,
+`aria-expanded` - to nikad nije bio problem), ali fokus koji je sam postavio
+pri otvaranju ne ide nikuda kad se meni zatvori istim toggle-om, pa
+`:focus-within` iz `style.css` (sloj dodat za tastaturu bez JavaScripta)
+samostalno i dalje drži meni vizuelno otvorenim, potpuno nezavisno od
+Bootstrap-ove odluke.
+
+### Prvi pokušaj rešenja - odbačen, širi test ga je oborio
+
+Prva ideja: u `js/navigacija.js` dodati `click` listener na toggle koji, ako
+je `.show` **odsutna** kad se listener izvrši (provereno da se izvršava POSLE
+Bootstrap-ovog sopstvenog rukovaoca - `.show` u tom trenutku već odražava
+stanje POSLE klika), pozove `toggle.blur()`. Ovo je popravilo klik: drugi
+klik je ispravno zatvarao meni i vizuelno, i u DOM-u (`activeElement` prelazi
+na `BODY`, `pointer-events: none`).
+
+**Ali pre nego što je ova izmena upisana kao konačna, testirano je i
+Escape** - i pokazao je **identičan bag**: Bootstrap posle Escape-a
+NAMERNO vraća fokus na toggle (ARIA konvencija za dugme koje otvara meni -
+korisnik mora znati gde je posle zatvaranja, ovo je već bilo testirano i
+očekivano ponašanje iz ranijeg kruga). `:focus-within` je posle Escape-a
+ostajao tačan iz istog razloga kao kod klika, pa je meni ostajao vizuelno
+otvoren i posle ispravnog Escape zatvaranja. `toggle.blur()` bi ovde
+POPRAVIO vizuelni bag, ali bi **pokvario samu pristupačnost koju Escape
+namerno obezbeđuje** - eksplicitan zahtev je da Escape i dalje radi, a
+"raditi" ovde uključuje i vraćanje fokusa, već ustanovljeno u ranijem krugu.
+Blur-na-klik rešenje je zato odbačeno u celosti, ne samo dopunjeno.
+
+### Pravi uzrok i konačno rešenje
+
+Zajednički uzrok oba slučaja: **CSS nema memoriju uzroka**, samo trenutno
+stanje. `:focus-within` ne može da razlikuje "fokus je stigao ovde da bi
+zatražio otvaranje" (sveža Tab navigacija) od "fokus je ostao ovde posle
+zatvaranja" (Bootstrap ga namerno tu drži ili ga jednostavno nije pomerio) -
+oba izgledaju identično kao "trenutno stanje: fokusiran". Nijedno rešenje
+zasnovano na diranju fokusa (blur ovde, blur tamo, blur svuda-osim-kad-ne-bi-
+trebalo) ne može biti opšte, jer bi svaki takav pokušaj morao unapred da zna
+KOJI je od dva slučaja u pitanju - što je tačno ono što CSS ne zna.
+
+Rešenje zato ne dira fokus nikako. Umesto toga, `js/navigacija.js` čim
+potvrdi da je Bootstrap dostupan, doda klasu `.js-aktivan` na svaku grupu
+(`<li class="dropdown">`). U `style.css`, oba pravila koja koriste
+`:focus-within` sad glase `:not(.js-aktivan):focus-within` - čim je ta klasa
+prisutna, `:focus-within` sloj se **u potpunosti isključuje** za tu grupu, i
+Bootstrap-ova `.show` postaje **jedini** izvor istine za vizuelno stanje.
+`.show` je već tačna za svaki način zatvaranja (klik, Escape, klik van menija,
+programsko `hide()` iz "samo jedan otvoren" niže u istoj datoteci) jer je
+Bootstrap sam vodi kroz svoj Dropdown API - problem nije bio u tome ŠTA
+Bootstrap radi, nego u tome što je jedan **drugi**, nezavisni CSS mehanizam
+imao pravo veta koje Bootstrap-ovo stanje nije moglo da poništi.
+
+Ovo se uklapa u već postojeću, dokumentovanu nameru iz prethodnog kruga:
+komentar u `style.css` je od početka opisivao `:focus-within` kao sloj
+"**bez JS-a**: ... (tastatura)" - zamišljen kao rezerva za slučaj da
+JavaScript-a nema, ne kao dodatni, trajno aktivan način otvaranja POREĐ
+Bootstrap-a dok JS radi. Bag je bio u tome što je taj sloj ostajao aktivan i
+posle učitavanja JS-a, i mogao je da "pobedi" Bootstrap-ovu odluku o
+zatvaranju. `.js-aktivan` tu nameru čini doslovnom u kodu, ne samo u
+komentaru.
+
+### Posledica po tastaturu SA JavaScript-om (namerna, dokumentovana promena)
+
+Pre ove izmene, goli Tab-dolazak na toggle je i sam po sebi otvarao meni
+(preko `:focus-within`), čak i kad je JS aktivan. Posle ove izmene, to više
+nije slučaj - Tab-dolazak sam ne otvara ništa, dok JS radi. Meni je i dalje
+potpuno dostižan i otvoriv tastaturom: **Enter, Space ili strelica dole**,
+odmah pošto Tab dovede fokus na toggle, otvaraju ga preko Bootstrap-a, kao i
+uvek (provereno - vidi "Testirano"). Ovo je namerna promena, ne previd:
+"landing otvara" i "landing pa jedan pritisak otvara" su oba priznati,
+uobičajeni obrasci za pristupačne padajuće menije (drugi je, ako nešto,
+konvencionalniji - isti obrazac koji Bootstrap sam koristi svuda drugde u
+ovoj aplikaciji, npr. za akcije nad događajem u `operater/dogadjaji.php`).
+
+### Posledica po tastaturu BEZ JavaScript-a
+
+Nikakva. Kad JavaScript-a nema (ili Bootstrap ne uspe da se učita),
+`js/navigacija.js` se uopšte ne izvrši (rani izlazak iz IIFE-a na
+`typeof bootstrap === 'undefined'`, nepromenjen iz prethodnog kruga),
+`.js-aktivan` se nikad ne doda, i `:focus-within` ostaje **jedini i potpuno
+nepromenjen** mehanizam - identičan onome pre ove izmene. Ponovo provereno
+istim postupkom kao u prethodnom krugu (stranica preuzeta, svi `<script>`
+tagovi fizički uklonjeni, `autofocus` dodat na toggle kao čist HTML atribut,
+otvorena u Chrome-u sa `--disable-javascript`): meni se i dalje otvara bez
+ijedne linije JavaScript-a.
+
+### Testirano
+
+**DOM/CSS stanje kroz ceo ciklus klika** (privremeni alat, `dump-dom` uz
+`--virtual-time-budget` - pouzdano za sva polja OSIM `opacity`, isti
+poznati artefakt iz prethodnog kruga; `pointer-events` NIJE animiran i
+pouzdano pokazuje stvarno stanje):
+- 1. klik: `.show` prisutna, `pointer-events: auto` - otvoreno;
+- 2. klik: `.show` odsutna, `activeElement === toggle` i dalje `true`,
+  `:focus-within` i dalje `true`, ali **`pointer-events: none`** - zatvoreno
+  I DALJE i pored zaostalog fokusa, jer `.js-aktivan` isključuje taj sloj;
+- 3. klik: `.show` ponovo prisutna, `pointer-events: auto` - ponovo otvoreno.
+  Toggle radi kao pravi prekidač, otvara-zatvara-otvara.
+
+**Escape, posebno** (isti alat): posle Escape na otvorenom meniju,
+`activeElement === toggle` ostaje `true` (fokus se VRATIO, ARIA konvencija
+netaknuta) I `pointer-events: none` (meni ispravno zatvoren) - **oba uslova
+zadovoljena istovremeno**, što je bilo nemoguće sa blur-zasnovanim pristupom.
+
+**Vizuelno, snimcima ekrana BEZ `--virtual-time-budget`** (stvarno vreme, isti
+razlog kao u prethodnom krugu), na pravim stranicama:
+- `operater/lige.php`, grupa "Utakmice": klik→otvoreno, klik→**potpuno
+  zatvoreno** (nijedan trag menija na snimku), klik→ponovo otvoreno - obe
+  teme, identičan ishod;
+- `operater/lige.php`, grupa "Šifarnici" posle klika na "Utakmice": vidljiv
+  isključivo "Šifarnici" - "samo jedan otvoren" i dalje važi, potvrđeno
+  vizuelno;
+- `admin/korisnici.php`, grupa "Nadzor": klik-klik → potpuno zatvoreno,
+  isti ishod kao kod operatera;
+- `375px`, mobilni ugnežđeni prikaz: klik na hamburger pa klik-klik na grupu →
+  zatvoreno, bez regresije (mobilni sloj nikad nije koristio `:focus-within`
+  za vizuelno stanje, pa ni nije mogao imati ovaj bag, ali ponovo provereno
+  da ništa nije slučajno pokvareno);
+- fokus (tastatura) sam, bez klika, na 1350px: meni **ostaje zatvoren** -
+  potvrđena namerna promena;
+- fokus pa strelica dole: meni se otvara, fokus vidljivo prelazi na prvu
+  stavku ("Događaji i kvote" sa prstenom fokusa) - Bootstrap-ovo tastaturno
+  upravljanje unutar otvorenog menija nedirnuto.
+
+**Bez JavaScript-a**, ponovljeno (fizičko uklanjanje `<script>` tagova +
+`--disable-javascript` + `autofocus`): meni se otvara identično kao pre ove
+izmene - `:focus-within` sloj potpuno nepromenjen kad JS-a nema.
+
+**Ostalo:** sve stranice obe uloge, obe teme - HTTP 200, bez `Fatal error`/
+`Warning`/`Notice`/`Deprecated`/`SQLSTATE`. PHP sintaksa čista na svih 54
+fajla, `{`/`}` u `style.css` balansirano.
+
+Privremeni dijagnostički alati (četiri odvojene probne stranice - stanje kroz
+klik, redosled događaja, proba rešenja, Escape) nisu deo aplikacije i
+obrisani su, zajedno sa probnim nalozima. U bazi su ostala zatečena 3 naloga,
+12 događaja, 24 tima.
