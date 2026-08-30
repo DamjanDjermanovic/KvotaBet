@@ -1797,3 +1797,93 @@ Privremeni dijagnostički alati (četiri odvojene probne stranice - stanje kroz
 klik, redosled događaja, proba rešenja, Escape) nisu deo aplikacije i
 obrisani su, zajedno sa probnim nalozima. U bazi su ostala zatečena 3 naloga,
 12 događaja, 24 tima.
+
+---
+
+## Klik na drugu kvotu istog događaja sada zamenjuje, ne odbija (2026-08-30)
+
+Poslovno pravilo 2 (najviše jedna kvota po događaju na tiketu) ostaje na
+snazi - menja se samo put do njega. Ranije je klik na drugu kvotu istog
+događaja bio odbijen porukom „Sa jednog događaja može biti samo jedan par na
+tiketu.". Sada tu staru kvotu **zamenjuje** novom.
+
+### `ajax/tiket_dodaj.php`
+
+Zamena se radi isključivo na serveru; klijent i dalje šalje samo `kvota_id`,
+ništa u zahtevu nije promenjeno. Petlja koja je ranije odbijala klik na drugom
+pogotku (isti `dogadjaj_id`) sad umesto toga tu stavku izbacuje iz nove liste
+pre nego što doda novu, i pamti `kvota_id` izbačene stavke.
+
+Slučaj kad je poslata kvota **ista** ona koja je već na tiketu ostaje
+netaknut - i dalje se odbija porukom „Ovaj par je već na tiketu.", ne
+„zamenjuje sama sobom". Ovo se u redovnom radu ionako ne dešava: klik na već
+izabrano dugme u ponudi `js/tiket.js` šalje na `tiket_ukloni.php`, ne ovde
+(bira fajl po klasi `.izabrana`) - do ovog puta bi se stiglo samo sa
+zastarelim stanjem na klijentu (npr. druga otvorena kartica).
+
+Odgovor sad nosi `zamenjena_kvota_id` (id izbačene kvote, ili `null` kad
+zamene nije bilo) i, samo kad je do zamene došlo, kratku `poruka` za
+korisnika: „Prethodni par sa ovog događaja je zamenjen novim.".
+
+### JS nije trebalo menjati
+
+Provereno pre pisanja bilo čega u `js/tiket.js`: `oznaciKvoteUPonudi()` već
+posle **svakog** AJAX odgovora prođe kroz **sve** `.dugme-kvota` na strani i
+klasu `.izabrana` postavi prema tome da li se dugme nalazi u vraćenom spisku
+`stavke` - ne dodaje je samo na kliknuto dugme. Kad server vrati novu listu
+stavki (staru kvotu zamenjenu novom), ovaj mehanizam sam skine `.izabrana` sa
+stare i doda je na novu, bez ijedne izmene u JS-u. Isto važi i za poruku:
+`osveziPanel()` već ispisuje `odgovor.poruka` kao `alert-success` kad je
+`uspeh: true` - dovoljno je bilo da server pošalje nenultu `poruka` samo u
+slučaju zamene.
+
+Ovo pokriva i kvote iza dugmeta „+N": `.kvote-dodatne` je u DOM-u od učitavanja
+strane (samo sakriven sa `d-none`, ne dodat naknadno preko JS-a), pa ga
+`document.querySelectorAll('.dugme-kvota')` u `oznaciKvoteUPonudi()` ionako
+zahvata bez obzira na vidljivost.
+
+### `ajax/tiket_uplati.php` - nezavisna provera pravila 2
+
+Do sada uplata nije nigde EKSPLICITNO proveravala pravilo 2 - oslanjala se na
+to da sesija nikad neće sadržati dve kvote istog događaja, jer je jedini put
+kojim se sesija punila (`tiket_dodaj.php`) to sprečavao odbijanjem. Ta
+pretpostavka je posle ove izmene i dalje tačna (zamena umesto odbijanja i
+dalje garantuje najviše jednu kvotu po događaju), ali zahtev je bio izričit:
+uplata mora poštovati pravilo 2 **nezavisno** od toga kako je tiket sastavljen.
+Dodata je eksplicitna provera - petlja preko `dogadjaj_id` svih stavki, uz
+odbijanje ako se neki ponovi - odmah posle provere da se ponuda nije u
+međuvremenu promenila, pre bilo kakvog upisa u bazu.
+
+### Testirano
+
+Preko pravog HTTP-a, probnim igračkim nalogom:
+- dodavanje kvote na prazan tiket - bez poruke, kao i pre;
+- dodavanje **druge** kvote sa istog događaja (`dogadjaj_id=5`, "1" pa "2") -
+  odgovor sadrži `zamenjena_kvota_id` stare kvote i poruku o zameni, `stavke`
+  sadrži samo novu;
+- slanje **iste** kvote koja je već na tiketu direktno na `tiket_dodaj.php`
+  (zaobilazeći JS routing) - i dalje odbijeno porukom „Ovaj par je već na
+  tiketu.", tiket nepromenjen;
+- dodavanje kvote sa **drugog** događaja dok je nešto već na tiketu - prosto
+  dodato, bez zamene, postojeća stavka netaknuta;
+- zamena kvotom iz skrivenog „+N" panela (`GG`, `dogadjaj_id` isti kao
+  vidljiva "1"/"X"/"2") - zamena radi identično kao za vidljive kvote.
+
+Kroz pravi pregledač (headless Chrome, bez izmene `js/tiket.js`): klik na "1",
+pa klik na "GG" iz otvorenog „+N" panela - `.izabrana` se ispravno premešta
+(`"1"` gubi klasu i `aria-pressed` postaje `"false"`, `"GG"` dobija oboje),
+poruka se ispisuje sa klasom `alert-success` i tačnim tekstom, tiket i dalje
+ima tačno jednu stavku.
+
+**Nezavisna provera u uplati**, direktno testirana: kvote `[37, 39]` (obe sa
+`dogadjaj_id=5`) silom ubačene u sesiju mimo `tiket_dodaj.php` (privremeni
+dijagnostički skript, van aplikacije) - `tiket_sadrzaj.php` verno prikazuje
+oba (čitanje ne proverava pravilo 2, samo upis), a `tiket_uplati.php` odbija
+uplatu porukom o dva para sa istog događaja, **bez upisa reda u tabelu
+`tiket`** (0 pre, 0 posle pokušaja). Normalna uplata posle toga i dalje radi
+neometano (1 tiket upisan, račun umanjen za ulog).
+
+Privremeni dijagnostički skript (silovanje sesije mimo `tiket_dodaj.php`) i
+probna HTML stranica za headless test nisu deo aplikacije i obrisani su,
+zajedno sa probnim igračkim nalogom i njegovim tiketima/transakcijama. U bazi
+su ostala zatečena 3 naloga, 12 događaja, 24 tima.

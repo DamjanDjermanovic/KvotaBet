@@ -158,7 +158,12 @@ osim `operater/uvoz.php` i `operater/api_lige.php` ne sme uključivati
 Ovo je logika koju aplikacija mora poštovati:
 
 1. Tiket se sastoji od jedne ili više stavki; svaka stavka je jedna kvota jednog događaja.
-2. **Na jednom tiketu ne mogu biti dve kvote iz istog događaja.**
+2. **Na jednom tiketu ne mogu biti dve kvote iz istog događaja.** Klik na
+   drugu kvotu istog događaja ne odbija se porukom — ona ZAMENJUJE kvotu koja
+   je već na tiketu s tog događaja (stara se skida, nova dodaje). Pravilo time
+   nije oslabljeno, samo se do njega stiže zamenom umesto odbijanjem klika.
+   Zamena se radi na serveru (`ajax/tiket_dodaj.php`), a `ajax/tiket_uplati.php`
+   pravilo proverava i sam, nezavisno, tik pred upis u bazu.
 3. Ukupna kvota tiketa = proizvod kvota svih stavki. Potencijalni dobitak = ulog × ukupna kvota.
 4. Ulog mora biti između `MIN_ULOG` i `MAX_ULOG` iz konfiguracije, i ne veći od stanja računa.
 5. **Vrednost kvote se pamti u trenutku uplate tiketa** (`tiket_stavka.kvota_vrednost`).
