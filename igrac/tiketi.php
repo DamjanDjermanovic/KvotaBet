@@ -105,8 +105,11 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <?php // Kvota je snimljena u trenutku uplate, pa se ne menja ni ako je operater kasnije izmeni ?>
-                                    <span class="kvota-vrednost fw-semibold"><?= bezbedno($stavka['oznaka']) ?> <?= number_format((float) $stavka['kvota_vrednost'], 2) ?></span>
+                                    <?php // Kvota je snimljena u trenutku uplate, pa se ne menja ni ako je operater kasnije izmeni.
+                                          // Oznaka i vrednost su razdvojene istim rečnikom kao u ponudi (.oznaka/.kvota-vrednost),
+                                          // umesto da stoje slepljene u jednom tekstu ("1 2.40"). ?>
+                                    <span class="oznaka"><?= bezbedno($stavka['oznaka']) ?></span>
+                                    <span class="kvota-vrednost fw-semibold"><?= number_format((float) $stavka['kvota_vrednost'], 2) ?></span>
                                     <span class="status status-<?= bezbedno($stavka['stavka_status']) ?>"><?= bezbedno($stavka['stavka_status']) ?></span>
                                 </div>
                             </li>

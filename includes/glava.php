@@ -34,7 +34,7 @@ function puna_adresa(string $putanja): string
 function ispisi_glavu(string $naslov, ?string $opis = null): void
 {
     $opis = $opis ?? OPIS_APLIKACIJE;
-    $pun_naslov = $naslov . ' — Kladionica';
+    $pun_naslov = $naslov . ' — Kvota Bet';
     ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -51,7 +51,7 @@ function ispisi_glavu(string $naslov, ?string $opis = null): void
 
     <?php // Open Graph - kako link izgleda kad se nalepi u poruku ili na sajt ?>
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Kladionica">
+    <meta property="og:site_name" content="Kvota Bet">
     <meta property="og:title" content="<?= bezbedno($pun_naslov) ?>">
     <meta property="og:description" content="<?= bezbedno($opis) ?>">
     <meta property="og:image" content="<?= bezbedno(puna_adresa(KORENSKI_URL . '/og-slika.png')) ?>">
