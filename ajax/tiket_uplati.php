@@ -72,6 +72,22 @@ try {
         throw new RuntimeException('Ponuda se u međuvremenu promenila. Proverite tiket pa pokušajte ponovo.');
     }
 
+    // Poslovno pravilo 2: sa jednog događaja sme biti samo jedna kvota na
+    // tiketu. Ovo se proverava i pri dodavanju para (ajax/tiket_dodaj.php,
+    // gde se druga kvota istog događaja zamenjuje prvom), ali uplata ovde
+    // ne sme slepo da veruje da je sesija ostala ispravna do ovog trenutka -
+    // upis u bazu je nepovratan, pa je ovo poslednja i nezavisna provera.
+    $vidjeni_dogadjaji = [];
+    foreach ($stavke as $stavka) {
+        $dogadjaj_id = (int) $stavka['dogadjaj_id'];
+
+        if (isset($vidjeni_dogadjaji[$dogadjaj_id])) {
+            throw new RuntimeException('Tiket sadrži dva para sa istog događaja, što nije dozvoljeno. Uklonite jedan pa pokušajte ponovo.');
+        }
+
+        $vidjeni_dogadjaji[$dogadjaj_id] = true;
+    }
+
     // Poslovno pravilo 4
     $provera = proveri_ulog($ulog_unos, $korisnik['stanje_racuna']);
 
