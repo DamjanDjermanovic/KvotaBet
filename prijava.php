@@ -75,7 +75,7 @@ $csrf_token = generisi_csrf_token();
             <div class="card auth-karta">
                 <div class="card-body p-4">
                     <div class="text-center mb-4">
-                        <span class="eyebrow">Kladionica</span>
+                        <span class="eyebrow">Kvota Bet</span>
                         <h1 class="mb-0">Prijava</h1>
                     </div>
 

@@ -141,8 +141,8 @@ function grupa_menija(string $naziv_grupe, array $stavke): void
 <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container">
         <a class="navbar-brand" href="<?= KORENSKI_URL ?>/index.php">
-            <i class="bi bi-ticket-perforated" aria-hidden="true"></i>
-            Kladionica
+            <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+            Kvota Bet
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#glavniMeni"
                 aria-controls="glavniMeni" aria-expanded="false" aria-label="Prikaži meni">

@@ -368,9 +368,16 @@ require_once __DIR__ . '/../includes/zaglavlje.php';
                     <ul class="list-group list-group-flush">
                         <?php foreach ($tiket['stavke'] as $stavka): ?>
                             <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <?php // Naziv meča ide u sopstveni red, odvojen od oznake i vrednosti kvote -
+                                      // ranije su bili u istom tekstu ("Crvena zvezda — Partizan 1 2.40"), pa se
+                                      // nije videlo gde prestaje meč a počinje kvota. Oznaka/vrednost razdvojene
+                                      // istim rečnikom kao u ponudi (.oznaka/.kvota-vrednost). ?>
                                 <div class="small">
-                                    <?= bezbedno($stavka['domacin']) ?> — <?= bezbedno($stavka['gost']) ?>
-                                    <span class="kvota-vrednost fw-semibold ms-1"><?= bezbedno($stavka['oznaka']) ?> <?= number_format((float) $stavka['kvota_vrednost'], 2) ?></span>
+                                    <div class="fw-semibold"><?= bezbedno($stavka['domacin']) ?> — <?= bezbedno($stavka['gost']) ?></div>
+                                    <div>
+                                        <span class="oznaka"><?= bezbedno($stavka['oznaka']) ?></span>
+                                        <span class="kvota-vrednost fw-semibold"><?= number_format((float) $stavka['kvota_vrednost'], 2) ?></span>
+                                    </div>
                                 </div>
                                 <div class="d-flex gap-1 align-items-center">
                                     <form method="post" class="d-flex gap-1"

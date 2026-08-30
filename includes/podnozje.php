@@ -9,7 +9,7 @@
 
 <footer class="podnozje mt-auto">
     <div class="container text-center">
-        &copy; <?= date('Y') ?> Kladionica — fakultetski projekat
+        &copy; <?= date('Y') ?> Kvota Bet — fakultetski projekat
 
         <?php // Napomena stoji na svakoj strani da nijedan ekran ne ostavi utisak pravog uplatnog mesta ?>
         <div class="napomena">

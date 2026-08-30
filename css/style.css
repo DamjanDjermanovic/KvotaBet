@@ -646,6 +646,20 @@ h3 { font-size: 1.3rem; }
 .dropdown-item { border-radius: var(--radijus-sm); padding: .45rem .7rem; }
 .dropdown-item:hover { background: var(--red-hover); color: var(--naslov); }
 
+/* Isti obrazac kao .kvota.izabrana:hover niže u fajlu: .dropdown-item:hover i
+   .dropdown-item.active imaju istu težinu (0,2,0 - po dve klase), pa prelazak
+   miša preko VEĆ aktivne stavke (npr. trenutna stranica u grupi menija)
+   prebija akcenat bledom hover pozadinom - stavka pri prelasku izgleda kao da
+   NIJE izabrana. Kombinovani selektor (0,3,0) je jači i vraća pun akcenat;
+   vrednosti se čitaju iz istih --bs-dropdown-link-active-* promenljivih koje
+   .dropdown-menu već postavlja (iznad), pa izmena tamo automatski prati i
+   ovo pravilo. */
+.dropdown-item.active:hover,
+.dropdown-item.active:focus {
+    background: var(--bs-dropdown-link-active-bg);
+    color: var(--bs-dropdown-link-active-color);
+}
+
 /* =====================================================================
    KARTICE I SEKCIJE
    ===================================================================== */
@@ -924,6 +938,24 @@ h3 { font-size: 1.3rem; }
 }
 
 .tiket-stavka .kvota-vrednost { font-weight: 700; }
+
+/* Oznaka i vrednost kvote u ISTORIJI tiketa (igrac/tiketi.php, admin/tiketi.php)
+   - razdvojene, umesto da stoje slepljene u istom tekstu ("1 2.40"). Rečnik je
+   isti kao u ponudi (.oznaka/.kvota-vrednost), ne .tip iz panela iznad: .tip
+   je akcentovan jer u živom panelu SAM PO SEBI vodi pažnju ka paru koji se tek
+   uplaćuje, dok je ovde reč o već uplaćenom, istorijskom podatku - sitna,
+   prigušena oznaka pored krupne vrednosti dovoljno razdvaja bez novog isticanja.
+   .list-group-item je jedini zajednički predak u oba fajla (Bootstrap-ova
+   klasa, već u markupu - nije nova), pa je iskorišćen kao kuka umesto da se
+   izmišlja nova klasa. */
+.list-group-item .oznaka {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .74rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--prigusen);
+}
 
 .tiket-ukloni {
     background: none;

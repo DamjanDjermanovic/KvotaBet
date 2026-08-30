@@ -1887,3 +1887,138 @@ Privremeni dijagnostički skript (silovanje sesije mimo `tiket_dodaj.php`) i
 probna HTML stranica za headless test nisu deo aplikacije i obrisani su,
 zajedno sa probnim igračkim nalogom i njegovim tiketima/transakcijama. U bazi
 su ostala zatečena 3 naloga, 12 događaja, 24 tima.
+
+## Preimenovanje u "Kvota Bet" i tri sitne ispravke prikaza (2026-08-30)
+
+### Preimenovanje
+
+Ime koje vidi korisnik menjano je iz "Kladionica" u "Kvota Bet" - **isključivo**
+tekst i ikonice, ništa što aplikacija koristi interno. Folder
+(`htdocs/kladionica`), baza (`kladionica`) i svi nazivi tabela/kolona/klasa
+ostaju nedirnuti - to nije brend, to je infrastruktura, i menjanje bilo čega
+od toga bi zahtevalo restart Apache-a i ponovno pravljenje baze bez ikakve
+koristi za ono što se traži.
+
+Tekst je promenjen na pet mesta: `includes/glava.php` (naslov stranice i
+`og:site_name` - preko njih se ime automatski provuče i kroz `greska.php`,
+bez direktne izmene tog fajla), `includes/zaglavlje.php` (`.navbar-brand`),
+`includes/podnozje.php` (copyright red), `prijava.php` i `registracija.php`
+(natpis iznad forme). `CLAUDE.md` nije menjan - jedina pojava reči je malim
+slovom, i odnosi se na folder/bazu, ne na brend. `README.md` ne postoji u
+projektu (postoji `POKRETANJE.md`, ali njegov naslov je generičan i nijedna
+linija u njemu ne pominje ime aplikacije - samo folder/bazu).
+
+Ikonica je u potpunosti zamenjena: `bi-ticket-perforated` (zupci listića)
+u `bi-graph-up-arrow` (rastuća linija sa strelicom), jer zupci na 16px (favicon
+u kartici pregledača) postaju nerazaznatljiva mrlja, dok linija sa strelicom
+ostaje čitljiva i na toj veličini. Iz nje su ponovo generisani `favicon.svg`
+(providna pozadina, `--plava-500`), `favicon.ico` (32×32+16×16, puna
+`--mornar-900` pozadina, beo glif), `apple-touch-icon.png` (180×180, isti
+tretman) i `og-slika.png` (1200×630, isti gradijentni identitet kao ranije,
+novo ime). Isti postupak kao u prethodnom krugu: headless Chrome za
+iscrtavanje u visokoj rezoluciji, Pillow za umanjivanje (ImageMagick nije
+dostupan). `favicon.svg` je posle pisanja proveren XML parserom
+(`xml.dom.minidom.parse`) - i namerno pisan bez dve crtice zaredom unutar XML
+komentara, jer je tačno ta greška pokvarila prošlu verziju istog fajla.
+
+**Provera - grep kroz ceo projekat, oba pisanja:**
+
+| Pojava | Gde | Namerno ostavljeno? |
+|---|---|---|
+| `Kladionica` (veliko K) | `includes/odds_api.php:183`, `CURLOPT_USERAGENT` string poslat spoljnom servisu | DA - to je HTTP zaglavlje koje vidi The Odds API, ne korisnik; menjanje bi bilo kozmetika bez publike |
+| `kladionica` (malo k, x2) | `CLAUDE.md:77,204` - putanja foldera i naziv baze | DA - eksplicitno zaštićeno uputstvom zadatka |
+| `kladionica` (malo k, x3) | `POKRETANJE.md:6,12,52` - putanja foldera i naziv baze u uputstvu za pokretanje | DA - isto, infrastruktura, ne brend |
+| `kladionica` (malo k, x2) | `config/baza.php:11`, `config/konfiguracija.php:13` - `BAZA_NAZIV`, `KORENSKI_URL` | DA - konstante koje pogađaju stvarnu bazu/putanju, ne prikaz |
+| `kladionica` (malo k, više mesta) | `includes/odds_api.php`, `operater/uvoz.php`, `config/api.primer.php`, `DNEVNIK.md:918,1055` | DA - ovo je opšta imenica ("kladionica" = bookmaker/kuća koja nudi kvote na The Odds API-ju), ne ime ove aplikacije |
+
+Ni jedna pojava nije procenjena kao promašena - sve namerno ostavljene pojave
+su ili infrastruktura (folder, baza, putanje - eksplicitno zaštićeno) ili
+opšta imenica u drugom značenju (kladionica-kao-bookmaker u kontekstu uvoza
+kvota), nikad preostali brend.
+
+### Tri ispravke prikaza
+
+**1. `igrac/tiketi.php`** - oznaka i vrednost kvote u razvijenom redu stavke
+stajale su slepljene u istom tekstu ("1 2.40"), bez razdvajanja. Rečnik za to
+već postoji u ponudi (`.oznaka` - sitno, verzalno, prigušeno; `.kvota-vrednost`
+- krupno, podebljano) - iskorišćen je taj, umesto izmišljanja novog.
+
+**2. `admin/tiketi.php`** - isti problem, samo teži: naziv meča i
+oznaka/vrednost kvote bili su u istom redu ("Crvena zvezda — Partizan 1
+2.40"), pa se sve čitalo kao jedan potez. Naziv meča je izdvojen u sopstveni
+red (`fw-semibold`), oznaka/vrednost u red ispod, istim rečnikom kao u tački 1.
+
+Oba fajla dele `.list-group-item` kao roditelja stavke - to je jedina zajednička,
+već prisutna klasa (Bootstrap-ova, ne nova) između njih, pa je pravilo za novi
+izgled `.oznaka` unutar istorije tiketa zakačeno na `.list-group-item .oznaka`
+u `css/style.css`, bez ijedne nove klase u markupu.
+
+**3. `css/style.css` - `.dropdown-item.active:hover`.** `.dropdown-item.active`
+nosi akcenat boju za trenutno otvorenu stranicu u grupisanom meniju, ali
+`.dropdown-item:hover` ima istu specifičnost (0,2,0) i deli isto telo pravila
+za drugačije, ali preklapajuće stanje - prelazak miša preko VEĆ aktivne stavke
+je bleđom hover pozadinom prebijao akcenat, pa je trenutna stranica u
+otvorenom meniju izgledala neizabrano dok je miš iznad nje. Ispravka je isti
+obrazac kao ranije za `.kvota.izabrana:hover`: kombinovani selektor
+(`.dropdown-item.active:hover`, `.dropdown-item.active:focus`, specifičnost
+0,3,0) koji pobeđuje običan `:hover` i vraća pun akcenat. Vrednosti se čitaju
+iz `--bs-dropdown-link-active-bg`/`-color`, istih promenljivih koje
+`.dropdown-menu` već postavlja iznad u fajlu - izmena tamo automatski prati i
+ovo pravilo.
+
+**Ovo je ČETVRTI put da isti obrazac pravi grešku** - dva CSS sloja jednake
+specifičnosti opisuju naizgled isključiva, a zapravo preklapajuća stanja
+istog elementa, i redosled u fajlu (ne namera) odlučuje ko pobeđuje:
+
+1. `.kvota:hover` protiv `.kvota.izabrana` (ranija faza);
+2. `--bs-link-color-rgb` (ranija faza);
+3. `--bs-dropdown-link-active-bg` protiv hover pozadine padajućeg menija
+   (faza grupisanja navigacije);
+4. `.dropdown-item:hover` protiv `.dropdown-item.active` (ova ispravka).
+
+(`:focus-within` protiv `.show` je srodan, ali drugačiji obrazac - tamo dva
+NEZAVISNA ulazna uređaja drže dva različita menija otvorena istovremeno, a ne
+dva pravila koja se bore oko istog elementa.) Vredi da ovo stoji zapisano kao
+imenovan, ponavljajući obrazac, ne kao četiri odvojene anegdote: kad god novo
+pravilo dodaje akcenat na "ovo je trenutno/izabrano/aktivno" stanje, prva
+sledeća provera treba da bude - da li već postoji `:hover`/`:focus`/drugo
+pravilo iste specifičnosti na istom elementu koje opisuje drugo stanje, i da
+li se njih dva mogu istovremeno pogoditi.
+
+### Testirano
+
+Preimenovanje, kroz pravi HTTP (dva probna naloga, `kvotabet_test` kao igrač i
+`kvotabet_admin` kao admin, oba obrisana po završetku): navigacija u oba
+fajla-stavke prikazuje "KVOTA BET" sa `bi-graph-up-arrow` ikonicom, ispravno
+obojenom i verzalnom, u oba stanja teme. `favicon.svg` validan XML
+(`xml.dom.minidom.parse`), `favicon.ico` proveren po pikselu ugla - `(0,7,45)`
+= `#00072d` = `--mornar-900`.
+
+Sve tri ispravke prikaza provereno je stvarnim vremenom (headless Chrome BEZ
+`--virtual-time-budget`, zbog poznatog artefakta zamrznute CSS tranzicije), u
+obe teme:
+
+- **B1** - `igrac/tiketi.php`, red stavke prinudno razvijen (bez čekanja na
+  Bootstrap-ovu ~350ms animaciju collapse-a, koja screenshot alatu ionako nije
+  deo onoga što se proverava): "1" sitno/prigušeno, "2.40" krupno/podebljano,
+  jasno razdvojeni, u obe teme.
+- **B2** - `admin/tiketi.php`, isto: "Crvena zvezda — Partizan" u sopstvenom
+  podebljanom redu, "1 2.40" u redu ispod s istim razdvajanjem kao B1,
+  potvrđeno uveličanim isečkom snimka u obe teme.
+- **B3** - otvoren padajući meni "Poslovanje" (admin nalog), fokus na aktivnu
+  stavku "Tiketi" (`.focus()` - realan, skriptabilan ekvivalent hovera, koji
+  isto CSS pravilo pokriva preko `:focus`). Svetla tema: snimak ekrana
+  pokazuje punu akcenat pozadinu. Tamna tema: pošto je uzorkovan piksel ispao
+  blizu ivice fokus-prstena i doveo do sumnje, izmerena je stvarna računata
+  vrednost (`getComputedStyle` ubačen u dijagnostički overlay na snimku) -
+  `background-color: rgb(14, 107, 168)` (`= #0e6ba8 = --plava-500`),
+  `color: rgb(255, 255, 255)` - tačno `--bs-dropdown-link-active-bg`/`-color`,
+  bez ublažavanja. Kontrast belog teksta na `--povrsina-akcenat` ranije je
+  izmeren na 5.70:1 - taj token se nikad ne redefiniše po temi, pa jedno
+  merenje pokriva obe.
+
+Probna stranica za headless testove (`_realview.html`) i oba probna naloga
+(`kvotabet_test` id 25, `kvotabet_admin` id 26) sa svojim tiketom
+(`T-2026-856C2060`), stavkom i transakcijom obrisani su po završetku. Baza je
+posle čišćenja vraćena na zatečeno stanje: 3 naloga, 1 tiket (`pera`), 2
+stavke, 3 transakcije.

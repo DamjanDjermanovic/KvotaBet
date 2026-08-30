@@ -118,7 +118,7 @@ $max_datum_rodjenja = date('Y-m-d', strtotime('-' . MIN_GODINA_ZA_REGISTRACIJU .
             <div class="card auth-karta">
                 <div class="card-body p-4">
                     <div class="text-center mb-4">
-                        <span class="eyebrow">Kladionica</span>
+                        <span class="eyebrow">Kvota Bet</span>
                         <h1 class="mb-0">Registracija</h1>
                     </div>
 
