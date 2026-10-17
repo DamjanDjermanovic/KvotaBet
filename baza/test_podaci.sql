@@ -57,24 +57,24 @@ INSERT INTO tim (id, liga_id, naziv) VALUES
 
 
 -- ---------------------------------------------------------------------
--- DOGAĐAJI - svi u budućnosti i status 'najavljen', da odmah prime uplate
+-- DOGAĐAJI - budući test događaji i status 'najavljen', da odmah budu vidljivi u ponudi
 -- ---------------------------------------------------------------------
 INSERT INTO dogadjaj (id, liga_id, domacin_id, gost_id, vreme_pocetka, status) VALUES
 -- Fudbal
-(1, 1, 1,  2,  '2026-08-26 20:00:00', 'najavljen'),  -- Mančester Siti - Liverpul
-(2, 1, 3,  4,  '2026-08-27 18:30:00', 'najavljen'),  -- Arsenal - Čelsi
-(3, 2, 5,  6,  '2026-08-28 21:00:00', 'najavljen'),  -- Real Madrid - Barselona
-(4, 2, 7,  8,  '2026-08-29 19:00:00', 'najavljen'),  -- Atletiko Madrid - Sevilja
-(5, 3, 9,  10, '2026-08-30 19:00:00', 'najavljen'),  -- Crvena zvezda - Partizan
-(6, 3, 11, 12, '2026-08-31 17:00:00', 'najavljen'),  -- Vojvodina - TSC
+(1, 1, 1,  2,  '2026-09-10 20:00:00', 'najavljen'),  -- Mančester Siti - Liverpul
+(2, 1, 3,  4,  '2026-09-11 18:30:00', 'najavljen'),  -- Arsenal - Čelsi
+(3, 2, 5,  6,  '2026-09-12 21:00:00', 'najavljen'),  -- Real Madrid - Barselona
+(4, 2, 7,  8,  '2026-09-13 19:00:00', 'najavljen'),  -- Atletiko Madrid - Sevilja
+(5, 3, 9,  10, '2026-09-14 19:00:00', 'najavljen'),  -- Crvena zvezda - Partizan
+(6, 3, 11, 12, '2026-09-15 17:00:00', 'najavljen'),  -- Vojvodina - TSC
 -- Košarka
-(7,  4, 13, 14, '2026-09-01 20:00:00', 'najavljen'), -- Lejkers - Seltiksi
-(8,  4, 15, 16, '2026-09-02 20:00:00', 'najavljen'), -- Voriorsi - Hit
-(9,  5, 17, 18, '2026-09-03 20:00:00', 'najavljen'), -- Partizan - Crvena zvezda (košarka)
-(10, 5, 19, 20, '2026-09-04 20:00:00', 'najavljen'), -- Real Madrid - Panatinaikos
+(7,  4, 13, 14, '2026-09-16 20:00:00', 'najavljen'), -- Lejkers - Seltiksi
+(8,  4, 15, 16, '2026-09-17 20:00:00', 'najavljen'), -- Voriorsi - Hit
+(9,  5, 17, 18, '2026-09-18 20:00:00', 'najavljen'), -- Partizan - Crvena zvezda (košarka)
+(10, 5, 19, 20, '2026-09-19 20:00:00', 'najavljen'), -- Real Madrid - Panatinaikos
 -- Tenis
-(11, 6, 21, 22, '2026-09-05 15:00:00', 'najavljen'), -- Đoković - Alkaraz
-(12, 6, 23, 24, '2026-09-06 15:00:00', 'najavljen'); -- Medvedev - Siner
+(11, 6, 21, 22, '2026-09-20 15:00:00', 'najavljen'), -- Đoković - Alkaraz
+(12, 6, 23, 24, '2026-09-21 15:00:00', 'najavljen'); -- Medvedev - Siner
 
 
 -- ---------------------------------------------------------------------
@@ -103,3 +103,4 @@ INSERT INTO kvota (dogadjaj_id, tip_igre_id, vrednost) VALUES
 INSERT INTO kvota (dogadjaj_id, tip_igre_id, vrednost) VALUES
 (11, 12, 1.55), (11, 13, 2.40),
 (12, 12, 1.80), (12, 13, 2.00);
+
